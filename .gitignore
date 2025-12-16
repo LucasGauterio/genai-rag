@@ -1,0 +1,7 @@
+__pycache__
+.env
+.vscode
+.DS_Store
+ragenv
+chroma_db
+model_trials
