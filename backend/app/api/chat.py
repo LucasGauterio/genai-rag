@@ -1,8 +1,7 @@
 from flask import Blueprint, request, jsonify
 
-from rag.retriever import retrieve_context
-from rag.prompts import build_prompt
-from llm.openrouter import call_openrouter
+from rag import retrieve_context, build_prompt
+from llm import call_openrouter
 
 chat_bp = Blueprint("chat", __name__)
 

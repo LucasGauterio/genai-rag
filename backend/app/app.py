@@ -1,8 +1,7 @@
 from flask import Flask
 from flask_cors import CORS
 
-from api.chat import chat_bp
-from api.ingest import ingest_bp
+from api import chat_bp, ingest_bp
 
 def create_app():
     app = Flask(__name__)
