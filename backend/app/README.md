@@ -13,6 +13,7 @@ Response:
 curl -X POST http://127.0.0.1:5000/api/chat \
      -H "Content-Type: application/json" \
      -d '{"question": "What is Flask?"}'
+     
 Response:
 {
   "answer": "Flask is a lightweight Python web framework.",
