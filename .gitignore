@@ -4,4 +4,4 @@ __pycache__
 .DS_Store
 ragenv
 chroma_db
-
+venv
