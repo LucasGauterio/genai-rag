@@ -1,18 +1,41 @@
 export default defineEventHandler(async (event) => {
     const body = await readBody(event)
+    const { prompt } = body
 
-    // Mock response - no real backend logic
-    const { prompt, documents } = body
+    try {
+        // Forward request to Flask backend
+        const backendResponse = await $fetch<{ answer: string; context: string[] }>('http://localhost:5000/api/chat', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: {
+                question: prompt // Map frontend's 'prompt' to backend's 'question'
+            }
+        })
 
-    // Simulate slight delay like a real API
-    await new Promise(resolve => setTimeout(resolve, 500))
+        return {
+            response: backendResponse.answer,
+            context: backendResponse.context
+        }
+    } catch (error: unknown) {
+        // Handle network or backend errors
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error'
 
-    const docCount = documents?.length || 0
-    const response = docCount > 0
-        ? `This is a mock response based on your ${docCount} document(s). You asked: "${prompt}"`
-        : `This is a mock response. You asked: "${prompt}" (No documents uploaded yet)`
+        // Check if it's a fetch error with response details
+        if (typeof error === 'object' && error !== null && 'data' in error) {
+            const fetchError = error as { data?: { error?: string } }
+            if (fetchError.data?.error) {
+                throw createError({
+                    statusCode: 400,
+                    statusMessage: fetchError.data.error
+                })
+            }
+        }
 
-    return {
-        response
+        throw createError({
+            statusCode: 503,
+            statusMessage: `Backend unavailable: ${errorMessage}`
+        })
     }
 })

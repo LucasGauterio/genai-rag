@@ -1,5 +1,7 @@
 <script setup lang="ts">
-const { documents, addDocument, removeDocument } = useAppState()
+import type { Document } from '~/composables/useAppState'
+
+const { documents, addDocument, removeDocument, ingestDocument } = useAppState()
 
 const fileInput = ref<HTMLInputElement | null>(null)
 
@@ -7,12 +9,21 @@ function triggerUpload() {
   fileInput.value?.click()
 }
 
-function handleFileChange(event: Event) {
+async function handleFileChange(event: Event) {
   const target = event.target as HTMLInputElement
   const files = target.files
   if (files) {
     for (let i = 0; i < files.length; i++) {
-      addDocument(files[i])
+      const file = files[i]
+      if (file) {
+        addDocument(file)
+        // Auto-ingest supported files (PDF, TXT, MD)
+        const name = file.name.toLowerCase()
+        if (name.endsWith('.txt') || name.endsWith('.md') || name.endsWith('.pdf')) {
+          const index = documents.value.length - 1
+          await ingestDocument(index)
+        }
+      }
     }
   }
   // Reset input so same file can be selected again
@@ -21,12 +32,30 @@ function handleFileChange(event: Event) {
   }
 }
 
-function getFileIcon(file: File): string {
-  const name = file.name.toLowerCase()
+function getFileIcon(doc: Document): string {
+  const name = doc.file.name.toLowerCase()
   if (name.endsWith('.pdf')) return 'i-lucide-file-text'
   if (name.endsWith('.md')) return 'i-lucide-file-code'
   if (name.endsWith('.txt')) return 'i-lucide-file'
   return 'i-lucide-file'
+}
+
+function getStatusIcon(doc: Document): string | null {
+  switch (doc.status) {
+    case 'ingesting': return 'i-lucide-loader-2'
+    case 'ingested': return 'i-lucide-check-circle'
+    case 'error': return 'i-lucide-alert-circle'
+    default: return null
+  }
+}
+
+function getStatusClass(doc: Document): string {
+  switch (doc.status) {
+    case 'ingesting': return 'status-ingesting'
+    case 'ingested': return 'status-ingested'
+    case 'error': return 'status-error'
+    default: return 'status-pending'
+  }
 }
 
 function formatSize(bytes: number): string {
@@ -67,12 +96,27 @@ function formatSize(bytes: number): string {
         v-for="(doc, index) in documents"
         :key="index"
         class="document-item"
+        :class="getStatusClass(doc)"
       >
         <UIcon :name="getFileIcon(doc)" class="doc-icon" />
         <div class="doc-info">
-          <div class="doc-name">{{ doc.name }}</div>
-          <div class="doc-meta">{{ formatSize(doc.size) }}</div>
+          <div class="doc-name">{{ doc.file.name }}</div>
+          <div class="doc-meta">
+            {{ formatSize(doc.file.size) }}
+            <span v-if="doc.status === 'ingested'" class="chunk-info">
+              · {{ doc.chunksIngested }} chunks
+            </span>
+            <span v-if="doc.status === 'error'" class="error-info" :title="doc.error">
+              · Error
+            </span>
+          </div>
         </div>
+        <UIcon 
+          v-if="getStatusIcon(doc)" 
+          :name="getStatusIcon(doc)!" 
+          class="status-icon"
+          :class="{ 'animate-spin': doc.status === 'ingesting' }"
+        />
         <UButton
           icon="i-lucide-x"
           color="neutral"
@@ -199,5 +243,41 @@ function formatSize(bytes: number): string {
   margin-top: 4px !important;
   font-size: 11px !important;
   opacity: 0.7;
+}
+
+/* Status indicator styles */
+.status-icon {
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.status-ingesting .status-icon {
+  color: var(--ui-primary);
+}
+
+.status-ingested .status-icon {
+  color: #22c55e;
+}
+
+.status-error .status-icon {
+  color: #ef4444;
+}
+
+.chunk-info {
+  color: #22c55e;
+}
+
+.error-info {
+  color: #ef4444;
+  cursor: help;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
 }
 </style>

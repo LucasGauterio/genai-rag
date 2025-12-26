@@ -20,6 +20,24 @@ export default defineNuxtConfig({
     '/api/**': { prerender: false }
   },
 
+  // Proxy API requests to Flask backend during development
+  nitro: {
+    devProxy: {
+      '/api/chat': {
+        target: 'http://localhost:5000/api/chat',
+        changeOrigin: true
+      },
+      '/api/ingest': {
+        target: 'http://localhost:5000/api/ingest',
+        changeOrigin: true
+      },
+      '/api/ingest-file': {
+        target: 'http://localhost:5000/api/ingest-file',
+        changeOrigin: true
+      }
+    }
+  },
+
   compatibilityDate: '2025-01-15',
 
   eslint: {
