@@ -3,10 +3,12 @@ import uuid
 import io
 
 from rag.vector_store import ChromaVectorStore
+from rag.bm25 import BM25Retriever
 from utils.text import chunk_text
 
 ingest_bp = Blueprint("ingest", __name__)
 vector_store = ChromaVectorStore()
+bm25_retriever = BM25Retriever()
 
 
 @ingest_bp.route("/ingest", methods=["POST"])
@@ -27,6 +29,11 @@ def ingest():
         texts=chunks,
         metadatas=metadatas,
     )
+    bm25_docs = [
+        {"text": chunk, "metadata": meta}
+        for chunk, meta in zip(chunks, metadatas)
+    ]
+    bm25_retriever.add_documents(bm25_docs)
 
     return jsonify({
         "chunks_ingested": len(chunks)
@@ -63,6 +70,12 @@ def ingest_file():
             texts=chunks,
             metadatas=metadatas,
         )
+
+        bm25_docs = [
+        {"text": chunk, "metadata": meta}
+        for chunk, meta in zip(chunks, metadatas)
+        ]
+        bm25_retriever.add_documents(bm25_docs)
 
         return jsonify({
             "chunks_ingested": len(chunks),

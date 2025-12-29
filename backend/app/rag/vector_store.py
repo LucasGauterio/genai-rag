@@ -29,15 +29,25 @@ class ChromaVectorStore:
             metadatas=metadatas,
         )
 
-    def similarity_search(self, query: str, k: int = 3) -> list[str]:
-        """
-        Embed the query and use it for vector search.
-        """
+    def similarity_search(
+        self,
+        query: str,
+        k: int = 3,
+        metadata_filter: dict | None = None,
+    ):
         query_embedding = embed_text(query)
 
         result = self.collection.query(
             query_embeddings=[query_embedding],
             n_results=k,
+            where=metadata_filter,
         )
 
-        return result["documents"][0]
+        documents = []
+        for text, meta in zip(result["documents"][0], result["metadatas"][0]):
+            documents.append({
+                "text": text,
+                "metadata": meta,
+            })
+
+        return documents

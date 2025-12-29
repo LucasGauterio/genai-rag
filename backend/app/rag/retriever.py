@@ -1,6 +1,9 @@
 from rag.vector_store import ChromaVectorStore
+from rag.bm25 import BM25Retriever
+from rag.hybrid_retriever import HybridRetriever
 
 vector_store = ChromaVectorStore()
+bm25 = BM25Retriever()
 
 # Seed data (only for initial testing)
 # if vector_store.collection.count() == 0:
@@ -12,8 +15,13 @@ vector_store = ChromaVectorStore()
 #             "RAG combines retrieval with generation using LLMs.",
 #         ],
 #     )
+hybrid = HybridRetriever(
+    vector_store=vector_store,
+    bm25=bm25,
+    vector_weight=0.5,
+    bm25_weight=0.5,
+)
 
-
-def retrieve_context(query: str, k: int = 3) -> str:
-    documents = vector_store.similarity_search(query, k)
+def retrieve_context(query: str, k: int = 5) -> str:
+    documents = hybrid.retrieve(query, k)
     return "\n".join(documents)
