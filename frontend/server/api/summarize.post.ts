@@ -4,7 +4,7 @@ export default defineEventHandler(async (event) => {
 
     try {
         // Forward request to Flask backend
-        const backendResponse = await $fetch<{ answer: string; context: string[] }>('http://localhost:5000/api/chat', {
+        const backendResponse = await $fetch<{ answer: string; context: string[] }>('http://127.0.0.1:5000/api/chat', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'

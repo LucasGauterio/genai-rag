@@ -1,8 +1,18 @@
-flask
-flask-cors
-requests
-python-dotenv
-chromadb
-pypdf
-rank-bm25
+# Flask and web
+flask>=3.0.0
+flask-cors>=4.0.0
 
+# Vector database
+chromadb>=0.4.0
+
+# BM25 retrieval
+rank-bm25>=0.2.2
+
+# PDF processing
+pypdf>=4.0.0
+
+# HTTP requests (for OpenRouter API)
+requests>=2.31.0
+
+# Environment variables
+python-dotenv>=1.0.0

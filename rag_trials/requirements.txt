@@ -1,0 +1,25 @@
+# Core LangChain dependencies
+langchain-core
+langchain-chroma
+langchain-text-splitters
+langchain-community
+langchain-classic
+
+# LLM Providers
+langchain-google-genai
+langchain-huggingface
+openai
+
+# Vector Store
+chromadb
+
+# Embeddings and Re-ranking
+sentence-transformers
+flashrank
+
+# PDF Processing
+PyMuPDF
+
+# Utilities
+python-dotenv
+rank-bm25
