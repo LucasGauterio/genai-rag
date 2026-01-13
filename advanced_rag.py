@@ -4,7 +4,6 @@ from dotenv import load_dotenv
 
 # Core LangChain
 from langchain_chroma import Chroma
-from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables import RunnablePassthrough
 
@@ -18,36 +17,49 @@ from langchain_community.retrievers import BM25Retriever
 from langchain_classic.retrievers.contextual_compression import ContextualCompressionRetriever
 from langchain_community.document_compressors.flashrank_rerank import FlashrankRerank
 
-# Document Loading (Needed for BM25)
-from langchain_community.document_loaders import DirectoryLoader, PyPDFLoader
-from langchain_text_splitters import RecursiveCharacterTextSplitter
+# Custom Modules
+from generation import get_prompt_template
 
 load_dotenv()
 
 CHROMA_PATH = "chroma_db"
-DATA_PATH = "data/lectures"
 
-def get_hybrid_retriever(db_vector_retriever):
-    """
-    Creates a 'Hybrid' retriever that combines:
-    1. Semantic Search (Chroma) - Finds meaning (e.g., "fast car" matches "speedy vehicle")
-    2. Keyword Search (BM25) - Finds exact words (e.g., "Id: 123" matches "Id: 123")
-    """
-    print("Initializing BM25 (Keyword) Retriever...")
-    
-    # We need to re-load chunks for BM25 because it runs in-memory
-    # (In large production, you'd use a DB like Elasticsearch, but this works for small projects)
-    loader = DirectoryLoader(DATA_PATH, glob="*.pdf", loader_cls=PyPDFLoader)
-    raw_docs = loader.load()
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=500)
-    chunks = text_splitter.split_documents(raw_docs)
-    
-    bm25_retriever = BM25Retriever.from_documents(chunks)
-    bm25_retriever.k = 10  # Get top 10 keyword matches
+def format_docs(docs):
+    return "\n\n".join([f"Source: {doc.metadata.get('source', 'Unknown')}, Page: {doc.metadata.get('page_number', 'Unknown')}\nContent: {doc.page_content}" for doc in docs])
 
-    # Combine them! (50% Vector, 50% Keyword)
+def get_hybrid_retriever(db, doc_ids=None):
+    """
+    Creates a Hybrid retriever with optional doc_id filtering.
+    """
+    # 1. Vector (Dense) Retriever
+    search_kwargs = {"k": 10}
+    if doc_ids:
+        if len(doc_ids) == 1:
+            search_kwargs["filter"] = {"doc_id": doc_ids[0]}
+        else:
+            search_kwargs["filter"] = {"doc_id": {"$in": doc_ids}}
+    
+    vector_retriever = db.as_retriever(search_kwargs=search_kwargs)
+
+    # 2. BM25 (Sparse) Retriever
+    all_docs = db.get()
+    
+    docs_for_bm25 = []
+    for i in range(len(all_docs['ids'])):
+        metadata = all_docs['metadatas'][i]
+        content = all_docs['documents'][i]
+        from langchain_core.documents import Document
+        if not doc_ids or metadata['doc_id'] in doc_ids:
+            docs_for_bm25.append(Document(page_content=content, metadata=metadata))
+    
+    if not docs_for_bm25:
+        return vector_retriever
+        
+    bm25_retriever = BM25Retriever.from_documents(docs_for_bm25)
+    bm25_retriever.k = 10
+
     ensemble_retriever = EnsembleRetriever(
-        retrievers=[bm25_retriever, db_vector_retriever],
+        retrievers=[bm25_retriever, vector_retriever],
         weights=[0.5, 0.5]
     )
     return ensemble_retriever
@@ -55,51 +67,46 @@ def get_hybrid_retriever(db_vector_retriever):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("query_text", type=str, help="The question text.")
+    parser.add_argument("--mode", type=str, choices=["summary", "story", "flashcards"], default="summary", help="Generation mode.")
+    parser.add_argument("--doc_ids", type=str, nargs="*", help="Optional doc_ids to filter by.")
     args = parser.parse_args()
-    query_text = args.query_text
-
-    # 1. Setup Vector DB (Same as before)
+    
+    # Setup Vector DB
     embedding_function = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
     db = Chroma(persist_directory=CHROMA_PATH, embedding_function=embedding_function)
     
-    # Get the basic vector retriever
-    vector_retriever = db.as_retriever(search_kwargs={"k": 10})
+    # 1. Create Hybrid Retriever with Scope Control
+    print(f"Initializing Hybrid Retriever (Mode: {args.mode}, Scope: {args.doc_ids if args.doc_ids else 'Full Content'})...")
+    hybrid_retriever = get_hybrid_retriever(db, doc_ids=args.doc_ids)
 
-    # 2. UPGRADE: Create Hybrid Retriever
-    # This combines keyword search + vector search
-    hybrid_retriever = get_hybrid_retriever(vector_retriever)
+    # 2. Add Re-Ranking
+    print("Initializing Re-ranker...")
+    try:
+        compressor = FlashrankRerank(model="ms-marco-MiniLM-L-12-v2")
+    except Exception as e:
+        print(f"Warning: Flashrank failed to initialize ({e}). Falling back to no re-ranking.")
+        compressor = None
+    if compressor:
+        compression_retriever = ContextualCompressionRetriever(
+            base_compressor=compressor, 
+            base_retriever=hybrid_retriever
+        )
+    else:
+        compression_retriever = hybrid_retriever
 
-    # 3. UPGRADE: Add Re-Ranking
-    # This takes the top 10/20 results from the Hybrid search and strictly filters them.
-    print("Re-ranking results...")
-    compressor = FlashrankRerank()
-    compression_retriever = ContextualCompressionRetriever(
-        base_compressor=compressor, 
-        base_retriever=hybrid_retriever
-    )
+    # 3. Generation with Master Prompts
+    model = ChatGoogleGenerativeAI(model="gemini-flash-latest")
+    prompt_template = get_prompt_template(args.mode)
 
-    # 4. Define the Chat Chain
-    # Using Gemini 1.5 Flash
-    model = ChatGoogleGenerativeAI(model="gemini-2.5-flash")
-    
-    prompt_template = ChatPromptTemplate.from_template("""
-    Answer the question based ONLY on the following context:
-    {context}
-    
-    Question: {question}
-    """)
-
-    # 5. Build the Pipeline (The "Chain")
     chain = (
-        {"context": compression_retriever, "question": RunnablePassthrough()}
+        {"context": compression_retriever | format_docs, "question": RunnablePassthrough()}
         | prompt_template
         | model
         | StrOutputParser()
     )
 
-    # 6. Run it
-    print(f"\nProcessing Query: '{query_text}'")
-    response = chain.invoke(query_text)
+    print(f"\nProcessing Query: '{args.query_text}'")
+    response = chain.invoke(args.query_text)
     
     print("\n--- Answer ---")
     print(response)
