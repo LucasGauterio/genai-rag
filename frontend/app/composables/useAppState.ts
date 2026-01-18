@@ -1,4 +1,4 @@
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 
 interface Message {
     role: 'user' | 'assistant'
@@ -12,12 +12,28 @@ export interface Document {
     chunksIngested?: number
 }
 
+export interface Flashcard {
+    id: string
+    question: string
+    answer: string
+}
+
 // Shared state - in-memory only, clears on reload
 const messages = ref<Message[]>([])
 const currentPrompt = ref('')
 const documents = ref<Document[]>([])
 
+// Flashcard state
+const flashcards = ref<Flashcard[]>([])
+const isFlashcardPanelOpen = ref(false)
+const isGeneratingFlashcards = ref(false)
+
 export function useAppState() {
+    // Computed: check if at least one document is ingested
+    const hasIngestedDocuments = computed(() =>
+        documents.value.some(d => d.status === 'ingested')
+    )
+
     function addMessage(role: 'user' | 'assistant', content: string) {
         messages.value.push({ role, content })
     }
@@ -98,16 +114,62 @@ export function useAppState() {
         }))
     }
 
+    // Flashcard methods
+    function setFlashcards(cards: Flashcard[]) {
+        flashcards.value = cards
+    }
+
+    function openFlashcardPanel() {
+        isFlashcardPanelOpen.value = true
+    }
+
+    function closeFlashcardPanel() {
+        isFlashcardPanelOpen.value = false
+    }
+
+    async function generateFlashcards(): Promise<void> {
+        if (isGeneratingFlashcards.value) return
+
+        isGeneratingFlashcards.value = true
+        openFlashcardPanel()
+
+        try {
+            const response = await $fetch<{ flashcards: Flashcard[] }>('/api/flashcards', {
+                method: 'POST',
+                body: {
+                    documents: getDocumentMetadata()
+                }
+            })
+
+            setFlashcards(response.flashcards)
+        } catch (error: unknown) {
+            const errorMessage = error instanceof Error ? error.message : 'Failed to generate flashcards'
+            console.error('Flashcard generation error:', errorMessage)
+            setFlashcards([])
+        } finally {
+            isGeneratingFlashcards.value = false
+        }
+    }
+
     return {
         messages,
         currentPrompt,
         documents,
+        hasIngestedDocuments,
         addMessage,
         addDocument,
         removeDocument,
         updateDocumentStatus,
         ingestDocument,
         clearPrompt,
-        getDocumentMetadata
+        getDocumentMetadata,
+        // Flashcard exports
+        flashcards,
+        isFlashcardPanelOpen,
+        isGeneratingFlashcards,
+        setFlashcards,
+        openFlashcardPanel,
+        closeFlashcardPanel,
+        generateFlashcards
     }
 }

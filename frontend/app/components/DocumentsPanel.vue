@@ -1,7 +1,16 @@
 <script setup lang="ts">
 import type { Document } from '~/composables/useAppState'
 
-const { documents, addDocument, removeDocument, ingestDocument } = useAppState()
+const {
+  documents,
+  addDocument,
+  removeDocument,
+  ingestDocument,
+  hasIngestedDocuments,
+  isGeneratingFlashcards,
+  generateFlashcards
+} = useAppState()
+
 
 const fileInput = ref<HTMLInputElement | null>(null)
 
@@ -89,6 +98,18 @@ function formatSize(bytes: number): string {
       >
         Add source
       </UButton>
+      <UButton
+        icon="i-lucide-layers"
+        color="primary"
+        variant="outline"
+        block
+        class="flashcard-button"
+        :loading="isGeneratingFlashcards"
+        :disabled="!hasIngestedDocuments"
+        @click="generateFlashcards"
+      >
+        Generate Flashcards
+      </UButton>
     </div>
     
     <div class="documents-list">
@@ -163,6 +184,10 @@ function formatSize(bytes: number): string {
 .upload-section {
   padding: 12px 16px;
   flex-shrink: 0;
+}
+
+.flashcard-button {
+  margin-top: 8px;
 }
 
 .hidden-input {
