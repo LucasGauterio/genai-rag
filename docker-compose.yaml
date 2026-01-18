@@ -1,86 +1,9 @@
 version: '3.8'
 
 services:
-
-  backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    container_name: semantiq-backend
-    depends_on:
-      - db
-      - age-setup
-    env_file:
-      - .env
-    environment:
-      - ANALYSIS_ENABLED=true
-      - ANALYSIS_SEMANTIC_ENABLED=true
-      - ANALYSIS_SEMANTIC_URL=http://semantic-service:8000/analyze
-    ports:
-      - "8080:8080"
-
-  db:
-    image: apache/age:latest
-    container_name: semantiq-db
-    restart: always
-    env_file:
-      - .env
-    ports:
-      - "5432:5432"
-
-  age-setup:
-    image: apache/age:latest
-    container_name: semantiq-age-setup
-    depends_on:
-      - db
-    env_file:
-      - .env
-    entrypoint: [
-      "sh", "-c",
-      "until pg_isready -h db -p 5432; do echo 'Waiting for database...'; sleep 2; done;  \
-       PGPASSWORD=$POSTGRES_PASSWORD psql -h db -U $POSTGRES_USER -d $POSTGRES_DB -w -c \"CREATE EXTENSION IF NOT EXISTS age\"; \
-       PGPASSWORD=$POSTGRES_PASSWORD psql -h db -U $POSTGRES_USER -d $POSTGRES_DB -w -c \"CREATE EXTENSION IF NOT EXISTS hstore\"; \
-       PGPASSWORD=$POSTGRES_PASSWORD psql -h db -U $POSTGRES_USER -d $POSTGRES_DB -w -c \"ALTER DATABASE $POSTGRES_DB SET search_path = ag_catalog, public\"; 
-       PGPASSWORD=$POSTGRES_PASSWORD psql -h db -U $POSTGRES_USER -d $POSTGRES_DB -w -c \"SHOW search_path\"; "
-    ]
-    restart: "no"
-
-
-
-  semantic-service:
-    build:
-      context: ./semantic-service
-      dockerfile: Dockerfile
-    container_name: semantic-service
-    depends_on:
-      - backend
-    env_file:
-      - .env
-    environment:
-      - SEMANTIC_MODEL_NAME=intfloat/multilingual-e5-small
-      - SEMANTIC_TAG_SOURCE_URL=http://backend:8080/api/tags?limit=500
-      - SEMANTIC_TAG_SOURCE_TOKEN_URL=https://${AUTH0_DOMAIN}/oauth/token
-      - SEMANTIC_TAG_SOURCE_CLIENT_ID=${AUTH0_CLIENT_ID}
-      - SEMANTIC_TAG_SOURCE_CLIENT_SECRET=${AUTH0_CLIENT_SECRET}
-      - SEMANTIC_TAG_SOURCE_AUDIENCE=${AUTH0_AUDIENCE}
-      - SEMANTIC_TAG_REFRESH_SECONDS=900
-      - SEMANTIC_MAX_CONCEPTS=3
-      - SEMANTIC_MIN_CONFIDENCE=0.75
-      - SEMANTIC_TOP_SCORE_MARGIN=0.02
-      - SEMANTIC_MAX_CHARS=4000
-      - SEMANTIC_PARENT_CHILD_MARGIN=0.03
-      - SEMANTIC_RELATED_MARGIN=0.02
-      - HF_HUB_DISABLE_TELEMETRY=1
-      - TOKENIZERS_PARALLELISM=false
-    volumes:
-      - ./semantic-service/data:/app/data:ro
-      - semantic_model_cache:/app/.cache/huggingface
-    ports:
-      - "8000:8000"
-
   ollama:
     image: ollama/ollama:latest
-    container_name: semantiq-ollama
+    container_name: genai-ollama
     restart: unless-stopped
     volumes:
       - ollama_data:/root/.ollama
@@ -93,7 +16,7 @@ services:
 
   chroma:
     image: ghcr.io/chroma-core/chroma:0.5.20
-    container_name: semantiq-chroma
+    container_name: genai-chroma
     restart: unless-stopped
     environment:
       - IS_PERSISTENT=TRUE
@@ -109,6 +32,5 @@ services:
       retries: 3
 
 volumes:
-  semantic_model_cache:
   ollama_data:
   chroma_data:
