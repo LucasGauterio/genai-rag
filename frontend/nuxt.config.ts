@@ -16,6 +16,8 @@ export default defineNuxtConfig({
 
   // Don't prerender the main page since it's a dynamic app
   routeRules: {
+    // Disable SSR for the main app page - it uses client-only state
+    '/': { ssr: false },
     // API routes should not be prerendered
     '/api/**': { prerender: false }
   },
@@ -23,6 +25,10 @@ export default defineNuxtConfig({
   // Proxy API requests to Flask backend during development
   nitro: {
     devProxy: {
+      '/api/sessions': {
+        target: 'http://localhost:5000/api/sessions',
+        changeOrigin: true
+      },
       '/api/chat': {
         target: 'http://localhost:5000/api/chat',
         changeOrigin: true
@@ -31,6 +37,10 @@ export default defineNuxtConfig({
         target: 'http://localhost:5000/api/ingest',
         changeOrigin: true
       },
+      // '/api/sessions/': {
+      //   target: 'http://localhost:5000/api/sessions/',
+      //   changeOrigin: true
+      // },
       '/api/ingest-file': {
         target: 'http://localhost:5000/api/ingest-file',
         changeOrigin: true

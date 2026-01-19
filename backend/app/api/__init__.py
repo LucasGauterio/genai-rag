@@ -1,7 +1,7 @@
-from api.chat import chat_bp
-from api.ingest import ingest_bp
+from api.sessions import sessions_bp
+from api.generation import generation_bp
 
 __all__ = [
-    "chat_bp",
-    "ingest_bp",
+    "sessions_bp",
+    "generation_bp",
 ]

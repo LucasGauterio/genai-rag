@@ -1,12 +1,14 @@
 <script setup lang="ts">
-import type { Flashcard } from '~/composables/useAppState'
+import type { Flashcard, Citation, CitationsMap } from '~/composables/useAppState'
 
-const { flashcards, isFlashcardPanelOpen, isGeneratingFlashcards, closeFlashcardPanel } = useAppState()
+const { flashcards, citations, isFlashcardPanelOpen, isGeneratingFlashcards, closeFlashcardPanel } = useAppState()
 
 // Local state
 const currentIndex = ref(0)
 const isFlipped = ref(false)
 const panelRef = ref<HTMLElement | null>(null)
+const activeCitation = ref<Citation | null>(null)
+const showCitationPopover = ref(false)
 
 // Computed
 const currentCard = computed<Flashcard | undefined>(() => flashcards.value[currentIndex.value])
@@ -15,11 +17,89 @@ const hasCards = computed(() => totalCards.value > 0)
 const canGoPrev = computed(() => currentIndex.value > 0)
 const canGoNext = computed(() => currentIndex.value < totalCards.value - 1)
 
+// Get primary citation for the current card (for footer display)
+const currentCardCitation = computed<Citation | null>(() => {
+  const card = currentCard.value
+  if (!card?.citation) return null
+  return citations.value[card.citation] || null
+})
+
+// Parse answer text and split into segments (text and citation refs)
+interface AnswerSegment {
+  type: 'text' | 'citation'
+  content: string
+  citation?: Citation
+}
+
+function parseAnswerWithCitations(answer: string, citationsMap: CitationsMap): AnswerSegment[] {
+  const segments: AnswerSegment[] = []
+  const regex = /\[(\d+)\]/g
+  let lastIndex = 0
+  let match
+
+  while ((match = regex.exec(answer)) !== null) {
+    // Add text before the citation
+    if (match.index > lastIndex) {
+      segments.push({
+        type: 'text',
+        content: answer.slice(lastIndex, match.index)
+      })
+    }
+
+    // Add the citation reference
+    const citationKey = match[0] // e.g., "[4]"
+    const citation = citationsMap[citationKey]
+    segments.push({
+      type: 'citation',
+      content: citationKey,
+      citation: citation
+    })
+
+    lastIndex = regex.lastIndex
+  }
+
+  // Add remaining text after last citation
+  if (lastIndex < answer.length) {
+    segments.push({
+      type: 'text',
+      content: answer.slice(lastIndex)
+    })
+  }
+
+  return segments
+}
+
+const answerSegments = computed(() => {
+  const card = currentCard.value
+  if (!card?.answer) return []
+  return parseAnswerWithCitations(card.answer, citations.value)
+})
+
+// Citation popover methods
+function showCitationDetails(citation: Citation | undefined) {
+  if (citation) {
+    activeCitation.value = citation
+    showCitationPopover.value = true
+  }
+}
+
+function hideCitationDetails() {
+  showCitationPopover.value = false
+  activeCitation.value = null
+}
+
+// Truncate text for display
+function truncateText(text: string, maxLength: number = 150): string {
+  if (text.length <= maxLength) return text
+  return text.slice(0, maxLength).trim() + '...'
+}
+
 // Methods
 function nextCard() {
   if (canGoNext.value) {
     currentIndex.value++
     isFlipped.value = false
+    hideCitationDetails()
   }
 }
 
@@ -27,6 +107,7 @@ function prevCard() {
   if (canGoPrev.value) {
     currentIndex.value--
     isFlipped.value = false
+    hideCitationDetails()
   }
 }
 
@@ -39,6 +120,7 @@ function handleClose() {
   // Reset state when closing
   currentIndex.value = 0
   isFlipped.value = false
+  hideCitationDetails()
 }
 
 function handleClickOutside(event: MouseEvent) {
@@ -82,6 +164,7 @@ watch(isFlashcardPanelOpen, (isOpen) => {
   if (isOpen) {
     currentIndex.value = 0
     isFlipped.value = false
+    hideCitationDetails()
   }
 })
 </script>
@@ -136,24 +219,83 @@ watch(isFlashcardPanelOpen, (isOpen) => {
               <div
                 class="card-container"
                 :class="{ flipped: isFlipped }"
-                @click="flipCard"
               >
                 <div class="card">
                   <!-- Front (Question) -->
                   <div class="card-face card-front">
                     <div class="card-label">Question</div>
                     <div class="card-content">{{ currentCard?.question }}</div>
-                    <div class="card-hint">Click to reveal answer</div>
                   </div>
 
                   <!-- Back (Answer) -->
                   <div class="card-face card-back">
                     <div class="card-label">Answer</div>
-                    <div class="card-content">{{ currentCard?.answer }}</div>
-                    <div class="card-hint">Click to see question</div>
+                    <div class="card-content answer-content">
+                      <template v-for="(segment, idx) in answerSegments" :key="idx">
+                        <span v-if="segment.type === 'text'">{{ segment.content }}</span>
+                        <UTooltip
+                          v-else-if="segment.type === 'citation' && segment.citation"
+                          :text="`${segment.citation.source} (p.${segment.citation.page})`"
+                        >
+                          <span
+                            class="citation-badge"
+                            @click.stop="showCitationDetails(segment.citation)"
+                          >
+                            {{ segment.content }}
+                          </span>
+                        </UTooltip>
+                        <span v-else class="citation-badge citation-unknown">{{ segment.content }}</span>
+                      </template>
+                    </div>
+
+                    <!-- Source Footer -->
+                    <div v-if="currentCardCitation" class="source-footer">
+                      <UIcon name="i-lucide-file-text" class="source-icon" />
+                      <span class="source-text">
+                        {{ currentCardCitation.source }} · Page {{ currentCardCitation.page }}
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
+
+              <!-- Citation Detail Modal -->
+              <UModal v-model:open="showCitationPopover">
+                <template #content>
+                  <div class="citation-modal">
+                    <div class="citation-modal-header">
+                      <UIcon name="i-lucide-quote" class="citation-modal-icon" />
+                      <span class="citation-modal-title">Source Citation</span>
+                    </div>
+                    <div v-if="activeCitation" class="citation-modal-body">
+                      <div class="citation-meta">
+                        <div class="citation-meta-item">
+                          <UIcon name="i-lucide-file-text" />
+                          <span>{{ activeCitation.source }}</span>
+                        </div>
+                        <div class="citation-meta-item">
+                          <UIcon name="i-lucide-bookmark" />
+                          <span>Page {{ activeCitation.page }}</span>
+                        </div>
+                      </div>
+                      <div class="citation-text-label">Excerpt:</div>
+                      <div class="citation-text">
+                        {{ activeCitation.text }}
+                      </div>
+                    </div>
+                    <div class="citation-modal-footer">
+                      <UButton
+                        color="neutral"
+                        variant="soft"
+                        size="sm"
+                        @click="hideCitationDetails"
+                      >
+                        Close
+                      </UButton>
+                    </div>
+                  </div>
+                </template>
+              </UModal>
 
               <!-- Navigation -->
               <div class="card-navigation">
@@ -314,7 +456,6 @@ watch(isFlashcardPanelOpen, (isOpen) => {
 .card-container {
   flex: 1;
   perspective: 1000px;
-  cursor: pointer;
   min-height: 200px;
 }
 
@@ -397,6 +538,150 @@ watch(isFlashcardPanelOpen, (isOpen) => {
   display: flex;
   align-items: center;
   gap: 4px;
+}
+
+/* Citation Badges */
+.answer-content {
+  display: inline;
+}
+
+.citation-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1px 6px;
+  margin: 0 1px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ui-primary);
+  background-color: color-mix(in srgb, var(--ui-primary) 15%, transparent);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  vertical-align: baseline;
+}
+
+.citation-badge:hover {
+  background-color: color-mix(in srgb, var(--ui-primary) 25%, transparent);
+  transform: translateY(-1px);
+}
+
+.citation-badge.citation-unknown {
+  color: var(--ui-text-muted);
+  background-color: var(--ui-bg-elevated);
+  cursor: default;
+}
+
+.citation-badge.citation-unknown:hover {
+  transform: none;
+}
+
+/* Source Footer */
+.source-footer {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px solid var(--ui-border);
+  font-size: 11px;
+  color: var(--ui-text-muted);
+}
+
+.source-icon {
+  font-size: 14px;
+  flex-shrink: 0;
+  color: var(--ui-primary);
+  opacity: 0.7;
+}
+
+.source-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Citation Modal */
+.citation-modal {
+  padding: 16px;
+  min-width: 280px;
+  max-width: 400px;
+}
+
+.citation-modal-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--ui-border);
+}
+
+.citation-modal-icon {
+  font-size: 18px;
+  color: var(--ui-primary);
+}
+
+.citation-modal-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ui-text);
+}
+
+.citation-modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.citation-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.citation-meta-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--ui-text-muted);
+}
+
+.citation-meta-item i,
+.citation-meta-item svg {
+  font-size: 14px;
+  color: var(--ui-primary);
+  opacity: 0.7;
+}
+
+.citation-text-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--ui-text-muted);
+  margin-top: 4px;
+}
+
+.citation-text {
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--ui-text);
+  background-color: var(--ui-bg-elevated);
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid var(--ui-border);
+  max-height: 150px;
+  overflow-y: auto;
+}
+
+.citation-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--ui-border);
 }
 
 /* Panel Transition */
