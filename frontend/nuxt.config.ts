@@ -16,6 +16,8 @@ export default defineNuxtConfig({
 
   // Don't prerender the main page since it's a dynamic app
   routeRules: {
+    // Disable SSR for the main app page - it uses client-only state
+    '/': { ssr: false },
     // API routes should not be prerendered
     '/api/**': { prerender: false }
   },

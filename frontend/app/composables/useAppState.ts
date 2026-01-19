@@ -1,8 +1,9 @@
-import { ref, computed } from 'vue'
+import type { Ref } from 'vue'
 
-interface Message {
+export interface Message {
     role: 'user' | 'assistant'
     content: string
+    citations?: CitationsMap
 }
 
 export interface Document {
@@ -19,20 +20,46 @@ export interface Flashcard {
     citation?: string
 }
 
-// Shared state - in-memory only, clears on reload
-const messages = ref<Message[]>([])
-const currentPrompt = ref('')
-const documents = ref<Document[]>([])
+export interface Citation {
+    citation_id: string
+    source: string
+    page: number
+    text: string
+    start_offset: number
+    end_offset: number
+}
 
-// Session state - tracks current backend session
-const sessionId = ref<string | null>(null)
+export type CitationsMap = Record<string, Citation>
 
-// Flashcard state
-const flashcards = ref<Flashcard[]>([])
-const isFlashcardPanelOpen = ref(false)
-const isGeneratingFlashcards = ref(false)
+// Flashcard count bounds
+export const FLASHCARD_COUNT_MIN = 3
+export const FLASHCARD_COUNT_MAX = 30
+
+// Client-only shared state for documents (File objects can't be serialized)
+// This is safe because documents are only manipulated on the client
+let documentsState: Ref<Document[]> | null = null
+
+function getDocumentsRef(): Ref<Document[]> {
+    if (!documentsState) {
+        documentsState = ref<Document[]>([])
+    }
+    return documentsState
+}
 
 export function useAppState() {
+    // SSR-safe state using useState (serializable values only)
+    const messages = useState<Message[]>('messages', () => [])
+    const currentPrompt = useState<string>('currentPrompt', () => '')
+    const sessionId = useState<string | null>('sessionId', () => null)
+    const flashcards = useState<Flashcard[]>('flashcards', () => [])
+    const citations = useState<CitationsMap>('citations', () => ({}))
+    const isFlashcardPanelOpen = useState<boolean>('isFlashcardPanelOpen', () => false)
+    const isGeneratingFlashcards = useState<boolean>('isGeneratingFlashcards', () => false)
+    const flashcardCount = useState<number>('flashcardCount', () => 10)
+
+    // Client-only shared state for documents
+    const documents = getDocumentsRef()
+
     // Computed: check if at least one document is ingested
     const hasIngestedDocuments = computed(() =>
         documents.value.some(d => d.status === 'ingested')
@@ -56,8 +83,8 @@ export function useAppState() {
         return response.session_id
     }
 
-    function addMessage(role: 'user' | 'assistant', content: string) {
-        messages.value.push({ role, content })
+    function addMessage(role: 'user' | 'assistant', content: string, messageCitations?: CitationsMap) {
+        messages.value.push({ role, content, citations: messageCitations })
     }
 
     function addDocument(file: File) {
@@ -147,6 +174,10 @@ export function useAppState() {
         flashcards.value = cards
     }
 
+    function setCitations(citationData: CitationsMap) {
+        citations.value = citationData
+    }
+
     function openFlashcardPanel() {
         isFlashcardPanelOpen.value = true
     }
@@ -166,20 +197,22 @@ export function useAppState() {
         openFlashcardPanel()
 
         try {
-            const response = await $fetch<{ flashcards: Flashcard[] }>('/api/flashcards', {
+            const response = await $fetch<{ flashcards: Flashcard[]; citations: CitationsMap }>('/api/flashcards', {
                 method: 'POST',
                 body: {
                     sessionId: sessionId.value,
                     topic: 'content from uploaded documents',
-                    count: 10
+                    count: flashcardCount.value
                 }
             })
 
             setFlashcards(response.flashcards)
+            setCitations(response.citations || {})
         } catch (error: unknown) {
             const errorMessage = error instanceof Error ? error.message : 'Failed to generate flashcards'
             console.error('Flashcard generation error:', errorMessage)
             setFlashcards([])
+            setCitations({})
         } finally {
             isGeneratingFlashcards.value = false
         }
@@ -201,9 +234,12 @@ export function useAppState() {
         getDocumentMetadata,
         // Flashcard exports
         flashcards,
+        citations,
+        flashcardCount,
         isFlashcardPanelOpen,
         isGeneratingFlashcards,
         setFlashcards,
+        setCitations,
         openFlashcardPanel,
         closeFlashcardPanel,
         generateFlashcards

@@ -27,4 +27,12 @@
   min-height: 0;
   overflow: hidden;
 }
+
+/* Placeholder for DocumentsPanel during SSR */
+.documents-panel-placeholder {
+  width: 280px;
+  flex-shrink: 0;
+  background-color: var(--ui-bg-muted);
+  border-right: 1px solid var(--ui-border);
+}
 </style>

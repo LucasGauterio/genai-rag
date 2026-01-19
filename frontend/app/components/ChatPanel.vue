@@ -1,12 +1,73 @@
 <script setup lang="ts">
-const { messages, currentPrompt, addMessage, clearPrompt, getDocumentMetadata } = useAppState()
+import type { Message, CitationsMap, Citation } from '~/composables/useAppState'
+
+const { messages, currentPrompt, addMessage, clearPrompt, getDocumentMetadata, sessionId, hasIngestedDocuments } = useAppState()
 
 const isLoading = ref(false)
 const messagesContainer = ref<HTMLElement | null>(null)
+const activeCitation = ref<Citation | null>(null)
+const showCitationModal = ref(false)
+
+// Parse message content and split into segments (text and citation refs)
+interface MessageSegment {
+  type: 'text' | 'citation'
+  content: string
+  citation?: Citation
+}
+
+function parseMessageWithCitations(content: string, citations?: CitationsMap): MessageSegment[] {
+  if (!citations || Object.keys(citations).length === 0) {
+    return [{ type: 'text', content }]
+  }
+
+  const segments: MessageSegment[] = []
+  const regex = /\[(\d+)\]/g
+  let lastIndex = 0
+  let match
+
+  while ((match = regex.exec(content)) !== null) {
+    if (match.index > lastIndex) {
+      segments.push({ type: 'text', content: content.slice(lastIndex, match.index) })
+    }
+    const citationKey = match[0]
+    segments.push({ type: 'citation', content: citationKey, citation: citations[citationKey] })
+    lastIndex = regex.lastIndex
+  }
+
+  if (lastIndex < content.length) {
+    segments.push({ type: 'text', content: content.slice(lastIndex) })
+  }
+
+  return segments
+}
+
+function showCitationDetails(citation: Citation | undefined) {
+  if (citation) {
+    activeCitation.value = citation
+    showCitationModal.value = true
+  }
+}
+
+function hideCitationDetails() {
+  showCitationModal.value = false
+  activeCitation.value = null
+}
+
+interface SummarizeResponse {
+  response: string
+  citations?: CitationsMap
+  chunksUsed?: number
+}
 
 async function sendMessage() {
   const prompt = currentPrompt.value.trim()
   if (!prompt || isLoading.value) return
+  
+  // Check if we have a session with documents
+  if (!sessionId.value || !hasIngestedDocuments.value) {
+    addMessage('assistant', 'Please upload and ingest documents first before asking questions.')
+    return
+  }
   
   // Add user message immediately
   addMessage('user', prompt)
@@ -19,15 +80,17 @@ async function sendMessage() {
   // Send to API
   isLoading.value = true
   try {
-    const response = await $fetch('/api/summarize', {
+    const response = await $fetch<SummarizeResponse>('/api/summarize', {
       method: 'POST',
       body: {
         prompt,
+        sessionId: sessionId.value,
         documents: getDocumentMetadata()
       }
     })
     
-    addMessage('assistant', response.response)
+    // Add message with citations
+    addMessage('assistant', response.response, response.citations)
   } catch (error) {
     addMessage('assistant', 'Sorry, there was an error processing your request.')
   } finally {
@@ -67,7 +130,27 @@ function handleKeydown(event: KeyboardEvent) {
         :class="msg.role"
       >
         <div class="message-bubble" :class="msg.role">
-          {{ msg.content }}
+          <!-- User messages: plain text -->
+          <template v-if="msg.role === 'user'">{{ msg.content }}</template>
+          
+          <!-- Assistant messages: parse citations -->
+          <template v-else>
+            <template v-for="(segment, segIdx) in parseMessageWithCitations(msg.content, msg.citations)" :key="segIdx">
+              <span v-if="segment.type === 'text'">{{ segment.content }}</span>
+              <UTooltip
+                v-else-if="segment.type === 'citation' && segment.citation"
+                :text="`${segment.citation.source} (p.${segment.citation.page})`"
+              >
+                <span
+                  class="citation-badge"
+                  @click="showCitationDetails(segment.citation)"
+                >
+                  {{ segment.content }}
+                </span>
+              </UTooltip>
+              <span v-else class="citation-badge citation-unknown">{{ segment.content }}</span>
+            </template>
+          </template>
         </div>
       </div>
       
@@ -78,6 +161,44 @@ function handleKeydown(event: KeyboardEvent) {
         </div>
       </div>
     </div>
+
+    <!-- Citation Detail Modal -->
+    <UModal v-model:open="showCitationModal">
+      <template #content>
+        <div class="citation-modal">
+          <div class="citation-modal-header">
+            <UIcon name="i-lucide-quote" class="citation-modal-icon" />
+            <span class="citation-modal-title">Source Citation</span>
+          </div>
+          <div v-if="activeCitation" class="citation-modal-body">
+            <div class="citation-meta">
+              <div class="citation-meta-item">
+                <UIcon name="i-lucide-file-text" />
+                <span>{{ activeCitation.source }}</span>
+              </div>
+              <div class="citation-meta-item">
+                <UIcon name="i-lucide-bookmark" />
+                <span>Page {{ activeCitation.page }}</span>
+              </div>
+            </div>
+            <div class="citation-text-label">Excerpt:</div>
+            <div class="citation-text">
+              {{ activeCitation.text }}
+            </div>
+          </div>
+          <div class="citation-modal-footer">
+            <UButton
+              color="neutral"
+              variant="soft"
+              size="sm"
+              @click="hideCitationDetails"
+            >
+              Close
+            </UButton>
+          </div>
+        </div>
+      </template>
+    </UModal>
     
     <div class="input-area">
       <div class="input-container">
@@ -216,5 +337,106 @@ function handleKeydown(event: KeyboardEvent) {
 
 .message-input {
   flex: 1;
+}
+
+/* Citation Styles */
+.citation-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 18px;
+  padding: 0 4px;
+  margin: 0 2px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--ui-primary);
+  background-color: var(--ui-primary-alpha-10);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.15s;
+  vertical-align: middle;
+}
+
+.citation-badge:hover {
+  background-color: var(--ui-primary-alpha-20);
+}
+
+.citation-unknown {
+  color: var(--ui-text-muted);
+  background-color: var(--ui-bg-elevated);
+}
+
+/* Citation Modal */
+.citation-modal {
+  padding: 20px;
+  background: var(--ui-bg);
+  border-radius: 12px;
+  min-width: 320px;
+  max-width: 500px;
+}
+
+.citation-modal-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--ui-border);
+}
+
+.citation-modal-icon {
+  font-size: 20px;
+  color: var(--ui-primary);
+}
+
+.citation-modal-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ui-text);
+}
+
+.citation-modal-body {
+  margin-bottom: 16px;
+}
+
+.citation-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.citation-meta-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--ui-text-muted);
+}
+
+.citation-text-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ui-text-muted);
+  margin-bottom: 6px;
+}
+
+.citation-text {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ui-text);
+  background: var(--ui-bg-muted);
+  padding: 12px;
+  border-radius: 8px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.citation-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 12px;
+  border-top: 1px solid var(--ui-border);
 }
 </style>
