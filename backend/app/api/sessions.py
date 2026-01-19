@@ -77,7 +77,7 @@ def ingest_to_session(session_id: str):
     filename = file.filename or "unknown"
     
     try:
-        document_id = str(uuid.uuid5(uuid.NAMESPACE_DNS, filename))
+        document_id = str(uuid.uuid4())
         all_docs = []
         
         if filename.lower().endswith(".pdf"):

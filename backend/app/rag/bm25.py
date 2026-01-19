@@ -8,7 +8,7 @@ def tokenize(text: str) -> list[str]:
 
 class BM25Retriever:
     def __init__(self):
-        self.documents = []        # list of dicts
+        self.documents = []
         self.tokenized_docs = []
         self.bm25 = None
 
@@ -28,17 +28,15 @@ class BM25Retriever:
     ) -> list[dict]:
         if not self.bm25:
             return []
-
         scores = self.bm25.get_scores(tokenize(query))
-
         results = []
         for doc, score in zip(self.documents, scores):
             if metadata_filter:
                 for key, value in metadata_filter.items():
                     if doc["metadata"].get(key) != value:
                         break
-                else:
-                    results.append((doc, score))
+                    else:
+                        results.append((doc, score))
             else:
                 results.append((doc, score))
 
