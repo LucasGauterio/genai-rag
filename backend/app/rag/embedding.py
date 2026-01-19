@@ -7,11 +7,7 @@ Uses the same embedding model as semantic chunking for consistency.
 import os
 import requests
 from typing import List
-
-# Ollama embedding configuration
-OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
-EMBEDDING_MODEL = os.getenv("OLLAMA_EMBEDDING_MODEL", "nomic-embed-text")
-
+from config import OLLAMA_BASE_URL, EMBEDDING_MODEL
 
 def embed_text(text: str) -> List[float]:
     """
@@ -31,7 +27,6 @@ def embed_text(text: str) -> List[float]:
         },
         timeout=30,
     )
-    
     response.raise_for_status()
     data = response.json()
     

@@ -115,15 +115,14 @@ class SessionStore:
         
         collection = session["collection"]
         bm25 = session["bm25"]
-        
         # Prepare data
         ids, texts, metadatas = [], [], []
         for doc in documents:
-            chunk_id = f"{session_id}_{document_id}_{doc.metadata.get('chunk_index', 0)}"
+            chunk_id = f"{session_id}_{document_id}_p{doc.metadata.get('page_number', 0)}_c{doc.metadata.get('chunk_index', 0)}"
             ids.append(chunk_id)
             texts.append(doc.page_content)
             metadatas.append({**doc.metadata, "session_id": session_id})
-        
+       
         # Store in ChromaDB
         embeddings = [embed_text(t) for t in texts]
         collection.add(

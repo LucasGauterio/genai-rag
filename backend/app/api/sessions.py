@@ -77,7 +77,7 @@ def ingest_to_session(session_id: str):
     filename = file.filename or "unknown"
     
     try:
-        document_id = str(uuid.uuid4())
+        document_id = str(uuid.uuid5(uuid.NAMESPACE_DNS, filename))
         all_docs = []
         
         if filename.lower().endswith(".pdf"):
@@ -109,7 +109,7 @@ def ingest_to_session(session_id: str):
         
         if not all_docs:
             return jsonify({"error": "No chunks produced"}), 400
-        
+   
         # Store in session's collection
         result = store.add_documents(
             session_id=session_id,
