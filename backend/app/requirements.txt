@@ -1,8 +1,21 @@
+# Flask
 flask
 flask-cors
+
+# Utils
 requests
 python-dotenv
+
+# Vector DB & Retrieval
 chromadb
-pypdf
 rank-bm25
 
+# PDF Processing
+pypdf
+
+# LangChain (for semantic chunking)
+langchain
+langchain-core
+langchain-experimental
+langchain-ollama# Optional: for cross-encoder reranking
+# sentence-transformers

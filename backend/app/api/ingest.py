@@ -102,7 +102,7 @@ def ingest_file():
         if not all_docs:
             return jsonify({"error": "No chunks produced"}), 400
 
-        # all_docs struct:
+        # all_docs is a list of LangChain Document objects:
         # Document(page_content=str, metadata=dict)
         # metadata={
         #   "document_id": str: uuid,
@@ -111,13 +111,36 @@ def ingest_file():
         #   "chunk_index": int,
         #   "start_offset": int,
         #   "end_offset": int,
-        #   "citation_id": str: 'docId:pageNumber:chunkIndex'
+        #   "citation_id": str: 'docId:pPageNumber:cChunkIndex'
         # }
-        # Continue: store in vector DB, etc.
+
+        # Prepare data for storage
+        ids = [
+            f"{document_id}_{doc.metadata.get('chunk_index', i)}"
+            for i, doc in enumerate(all_docs)
+        ]
+        texts = [doc.page_content for doc in all_docs]
+        metadatas = [doc.metadata for doc in all_docs]
+
+        # Store in ChromaDB (vector store)
+        vector_store.add(
+            ids=ids,
+            texts=texts,
+            metadatas=metadatas,
+        )
+
+        # Store in BM25 (sparse retriever)
+        bm25_docs = [
+            {"text": text, "metadata": meta}
+            for text, meta in zip(texts, metadatas)
+        ]
+        bm25_retriever.add_documents(bm25_docs)
+
         return jsonify({
             "document_id": document_id,
             "filename": filename,
             "chunks_ingested": len(all_docs),
+            "pages": max((doc.metadata.get("page_number") or 0) for doc in all_docs),
         })
 
     except Exception as e:
