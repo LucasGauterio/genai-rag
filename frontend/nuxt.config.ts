@@ -23,6 +23,10 @@ export default defineNuxtConfig({
   // Proxy API requests to Flask backend during development
   nitro: {
     devProxy: {
+      '/api/sessions': {
+        target: 'http://localhost:5000/api/sessions',
+        changeOrigin: true
+      },
       '/api/chat': {
         target: 'http://localhost:5000/api/chat',
         changeOrigin: true

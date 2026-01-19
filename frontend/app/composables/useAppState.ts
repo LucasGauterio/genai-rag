@@ -16,12 +16,16 @@ export interface Flashcard {
     id: string
     question: string
     answer: string
+    citation?: string
 }
 
 // Shared state - in-memory only, clears on reload
 const messages = ref<Message[]>([])
 const currentPrompt = ref('')
 const documents = ref<Document[]>([])
+
+// Session state - tracks current backend session
+const sessionId = ref<string | null>(null)
 
 // Flashcard state
 const flashcards = ref<Flashcard[]>([])
@@ -33,6 +37,24 @@ export function useAppState() {
     const hasIngestedDocuments = computed(() =>
         documents.value.some(d => d.status === 'ingested')
     )
+
+    /**
+     * Ensure a session exists. Creates one if needed.
+     * Returns the session ID.
+     */
+    async function ensureSession(): Promise<string> {
+        if (sessionId.value) {
+            return sessionId.value
+        }
+
+        // Create a new session via the backend
+        const response = await $fetch<{ session_id: string }>('/api/sessions', {
+            method: 'POST'
+        })
+
+        sessionId.value = response.session_id
+        return response.session_id
+    }
 
     function addMessage(role: 'user' | 'assistant', content: string) {
         messages.value.push({ role, content })
@@ -82,15 +104,21 @@ export function useAppState() {
         try {
             updateDocumentStatus(index, 'ingesting')
 
+            // Ensure we have a session before ingesting
+            const currentSessionId = await ensureSession()
+
             // Use FormData for file upload (required for PDF parsing on backend)
             const formData = new FormData()
             formData.append('file', file)
 
-            // Send file to backend for processing
-            const response = await $fetch<{ chunks_ingested: number }>('/api/ingest-file', {
-                method: 'POST',
-                body: formData
-            })
+            // Send file to session-based backend endpoint
+            const response = await $fetch<{ chunks_ingested: number }>(
+                `/api/sessions/${currentSessionId}/ingest`,
+                {
+                    method: 'POST',
+                    body: formData
+                }
+            )
 
             updateDocumentStatus(index, 'ingested', { chunksIngested: response.chunks_ingested })
             return true
@@ -129,6 +157,10 @@ export function useAppState() {
 
     async function generateFlashcards(): Promise<void> {
         if (isGeneratingFlashcards.value) return
+        if (!sessionId.value) {
+            console.error('No session available for flashcard generation')
+            return
+        }
 
         isGeneratingFlashcards.value = true
         openFlashcardPanel()
@@ -137,7 +169,9 @@ export function useAppState() {
             const response = await $fetch<{ flashcards: Flashcard[] }>('/api/flashcards', {
                 method: 'POST',
                 body: {
-                    documents: getDocumentMetadata()
+                    sessionId: sessionId.value,
+                    topic: 'content from uploaded documents',
+                    count: 10
                 }
             })
 
@@ -155,12 +189,14 @@ export function useAppState() {
         messages,
         currentPrompt,
         documents,
+        sessionId,
         hasIngestedDocuments,
         addMessage,
         addDocument,
         removeDocument,
         updateDocumentStatus,
         ingestDocument,
+        ensureSession,
         clearPrompt,
         getDocumentMetadata,
         // Flashcard exports
