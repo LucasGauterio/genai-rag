@@ -27,11 +27,8 @@ class SessionStore:
     - Cleanup: delete collection when session closes
     """
     
-    def __init__(self, persist_path: str = "./chroma_sessions"):
-        self.client = chromadb.PersistentClient(
-            path=persist_path,
-            settings=Settings(anonymized_telemetry=False)
-        )
+    def __init__(self):
+        self.client = chromadb.Client()
         self._sessions: Dict[str, dict] = {}
     
     # --- Session CRUD ---
@@ -40,7 +37,6 @@ class SessionStore:
         """Create a new session with its own collection."""
         session_id = str(uuid.uuid4())[:8]
         collection_name = f"session_{session_id}"
-        
         collection = self.client.create_collection(
             name=collection_name,
             metadata={"created_at": datetime.utcnow().isoformat()}
@@ -62,8 +58,8 @@ class SessionStore:
     def get_session(self, session_id: str) -> Optional[dict]:
         """Get session info."""
         if session_id not in self._sessions:
-            if not self._recover_session(session_id):
-                return None
+            # if not self._recover_session(session_id):
+            return None
         
         session = self._sessions.get(session_id)
         if not session:
@@ -173,19 +169,20 @@ class SessionStore:
     
     # --- Private Helpers ---
     
-    def _recover_session(self, session_id: str) -> bool:
-        """Try to recover session from persistent storage."""
-        try:
-            collection = self.client.get_collection(f"session_{session_id}")
-            self._sessions[session_id] = {
-                "collection": collection,
-                "bm25": BM25Retriever(),
-                "created_at": collection.metadata.get("created_at", "unknown"),
-                "documents": [],
-            }
-            return True
-        except Exception:
-            return False
+    # def _recover_session(self, session_id: str) -> bool:
+    #     """Try to recover session from persistent storage."""
+    #     try:
+    #         collection = self.client.get_collection(f"session_{session_id}")
+    #         self.client._get_collection(f"session_{session_id}")
+    #         self._sessions[session_id] = {
+    #             "collection": collection,
+    #             "bm25": BM25Retriever(),
+    #             "created_at": collection.metadata.get("created_at", "unknown"),
+    #             "documents": [],
+    #         }
+    #         return True
+    #     except Exception:
+    #         return False
 
 
 # --- Global Instance ---
