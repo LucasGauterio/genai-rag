@@ -35,10 +35,10 @@ export default defineNuxtConfig({
         target: 'http://localhost:5000/api/ingest',
         changeOrigin: true
       },
-      '/api/sessions/': {
-        target: 'http://localhost:5000/api/sessions/',
-        changeOrigin: true
-      },
+      // '/api/sessions/': {
+      //   target: 'http://localhost:5000/api/sessions/',
+      //   changeOrigin: true
+      // },
       '/api/ingest-file': {
         target: 'http://localhost:5000/api/ingest-file',
         changeOrigin: true
