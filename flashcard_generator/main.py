@@ -182,12 +182,11 @@ def generate(
         progress.update(task, description="Generating flashcards...")
         
         transformer = TransformationChain()
-        raw_cards = transformer.transform(extracted)
+        # Returns a FlashcardSet directly, no need for string parsing
+        card_set = transformer.transform(extracted)
         
-        # Step 4: Validate structure
-        progress.update(task, description="Validating output structure...")
-        
-        card_set = validate_flashcards(raw_cards)
+        # Step 4: (Skipped) Transformation now handles structured output directly
+        # card_set is already a validated FlashcardSet object
         
         # Step 5: Self-correction (optional)
         stats = None
@@ -232,7 +231,7 @@ def _display_results(card_set: FlashcardSet, stats: dict, output_file: Path):
         
         stats_table.add_row("Total Cards", str(stats.get("total", 0)))
         stats_table.add_row("Accepted", str(stats.get("accepted", 0)))
-        stats_table.add_row("Revised", str(stats.get("revised", 0)))
+
         stats_table.add_row("Rejected", str(stats.get("rejected", 0)))
         stats_table.add_row("Avg Accuracy", f"{stats.get('avg_accuracy', 0):.2f}/5")
         stats_table.add_row("Avg Overall", f"{stats.get('avg_overall', 0):.2f}/5")

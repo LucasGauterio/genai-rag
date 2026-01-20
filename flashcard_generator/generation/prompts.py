@@ -28,36 +28,16 @@ Your task is to identify and extract learning-worthy information from the provid
 4. **PROCEDURES**: Step-by-step processes, algorithms, or workflows
 5. **EXAMPLES**: Concrete illustrations that clarify abstract concepts
 
-## Output Format
-
-For each piece of knowledge, output in this exact format:
-
-```
----
-CONCEPT: [Name or title of the concept]
-TYPE: [definition|principle|relationship|procedure|example]
-DESCRIPTION: [Clear, accurate explanation from the source - be precise]
-RELATED_TO: [Comma-separated list of related concepts mentioned in the context]
-SOURCE_QUOTE: "[Exact quote from context that supports this extraction]"
-DIFFICULTY: [basic|intermediate|advanced]
----
-```
-
 ## Rules
 
 1. **GROUNDING**: Extract ONLY information explicitly present in the provided context
 2. **ACCURACY**: Preserve technical terminology exactly as written
 3. **COMPLETENESS**: Capture all flashcard-worthy information
-4. **CLARITY**: If something is ambiguous in the source, mark as [NEEDS_CLARIFICATION]
-5. **DENSITY**: Aim to extract 5-10 concepts per context block when the material is rich
+4. **DENSITY**: Aim to extract 5-10 concepts per context block when the material is rich
 
 ## Context to Analyze
 
 {context}
-
-## Extracted Knowledge
-
-Begin extraction:
 """
 
 
@@ -67,11 +47,14 @@ Begin extraction:
 
 TRANSFORMATION_PROMPT = """You are an Expert Flashcard Designer creating exam-ready study materials.
 
-You will receive extracted concepts and must transform them into high-quality Question & Answer pairs.
+You will receive a single extracted concept and must transform it into a high-quality Question & Answer pair.
 
-## Extracted Concepts
+## Extracted Concept
 
-{extracted_concepts}
+Name: {concept_name}
+Type: {concept_type}
+Description: {concept_description}
+Source Quote: "{concept_quote}"
 
 ## Flashcard Design Principles
 
@@ -98,23 +81,19 @@ You will receive extracted concepts and must transform them into high-quality Qu
 
 ## Output Format
 
-Produce a JSON object with this exact structure:
+Produce a valid JSON object for a single flashcard:
 
 ```json
 {{
-  "cards": [
-    {{
-      "question": "Clear, specific question that tests understanding",
-      "answer": "Accurate, complete answer based on source material",
-      "tag": "one_of_the_five_tags"
-    }}
-  ]
+  "question": "Clear, specific question that tests understanding",
+  "answer": "Accurate, complete answer based on source material",
+  "tag": "one_of_the_five_tags"
 }}
 ```
 
 ## Rules
 
-1. Create at least one flashcard per extracted concept
+1. Create exactly ONE flashcard for this concept
 2. Questions must be unambiguous - only one correct answer possible
 3. Answers must be factually grounded in the extracted content
 4. Avoid yes/no questions - require explanation

@@ -14,6 +14,7 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_google_genai import ChatGoogleGenerativeAI
 
 from .prompts import EXTRACTION_PROMPT
+from .structured_output import ConceptList
 
 import sys
 from pathlib import Path
@@ -43,9 +44,11 @@ class ExtractorChain:
         )
         
         self.prompt = ChatPromptTemplate.from_template(EXTRACTION_PROMPT)
-        self.chain = self.prompt | self.model | StrOutputParser()
+        # Use structured output
+        self.structured_llm = self.model.with_structured_output(ConceptList)
+        self.chain = self.prompt | self.structured_llm
     
-    def extract(self, context: str) -> str:
+    def extract(self, context: str) -> ConceptList:
         """
         Extract concepts from context.
         
@@ -53,11 +56,11 @@ class ExtractorChain:
             context: Formatted context string from retrieval
             
         Returns:
-            Structured extraction output
+            List of extracted concepts (ConceptList)
         """
         return self.chain.invoke({"context": context})
     
-    def extract_from_documents(self, documents: List[Document]) -> str:
+    def extract_from_documents(self, documents: List[Document]) -> ConceptList:
         """
         Extract concepts from a list of documents.
         
@@ -90,7 +93,7 @@ class ExtractorChain:
 def extract_concepts(
     documents: List[Document],
     model_name: str = None,
-) -> str:
+) -> ConceptList:
     """
     Convenience function to extract concepts from documents.
     

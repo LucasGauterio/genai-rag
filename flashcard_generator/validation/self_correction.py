@@ -72,20 +72,9 @@ Respond with ONLY a valid JSON object:
   "completeness_score": <1-5>,
   "clarity_score": <1-5>,
   "relevance_score": <1-5>,
-  "issues": ["list of specific problems found, empty if none"],
-  "suggested_revision": {{
-    "question": "revised question if needed, or null",
-    "answer": "revised answer if needed, or null"
-  }},
-  "verdict": "ACCEPT" | "REVISE" | "REJECT"
+  "issues": ["list of specific problems found, empty if none"]
 }}
 ```
-
-## Verdict Guidelines
-
-- **ACCEPT**: Average score >= 4.0 and no accuracy issues
-- **REVISE**: Average score >= 3.0 but has fixable issues
-- **REJECT**: Average score < 3.0 or contains factual errors that can't be fixed
 
 ## Your Critique
 
@@ -96,21 +85,14 @@ Respond with ONLY a valid JSON object:
 # PYDANTIC MODELS FOR CRITIQUE
 # =============================================================================
 
-class SuggestedRevision(BaseModel):
-    """Suggested revisions for a flashcard."""
-    question: Optional[str] = None
-    answer: Optional[str] = None
-
 
 class CritiqueResult(BaseModel):
     """Result of critiquing a single flashcard."""
-    accuracy_score: int = Field(..., ge=1, le=5)
-    completeness_score: int = Field(..., ge=1, le=5)
-    clarity_score: int = Field(..., ge=1, le=5)
-    relevance_score: int = Field(..., ge=1, le=5)
+    accuracy_score: float = Field(..., ge=1, le=5)
+    completeness_score: float = Field(..., ge=1, le=5)
+    clarity_score: float = Field(..., ge=1, le=5)
+    relevance_score: float = Field(..., ge=1, le=5)
     issues: List[str] = Field(default_factory=list)
-    suggested_revision: SuggestedRevision = Field(default_factory=SuggestedRevision)
-    verdict: str = Field(..., pattern="^(ACCEPT|REVISE|REJECT)$")
     
     @property
     def average_score(self) -> float:
@@ -121,6 +103,19 @@ class CritiqueResult(BaseModel):
             self.clarity_score + 
             self.relevance_score
         ) / 4.0
+    
+    @property
+    def verdict(self) -> str:
+        """
+        Calculate verdict deterministically in Python.
+        
+        Rules:
+        - ACCEPT: Average score >= 4.0 AND Accuracy score >= 4
+        - REJECT: Otherwise
+        """
+        if self.average_score >= 4.0 and self.accuracy_score >= 4:
+            return "ACCEPT"
+        return "REJECT"
 
 
 # =============================================================================
@@ -189,33 +184,7 @@ class CritiqueChain:
                 clarity_score=3,
                 relevance_score=3,
                 issues=["Critique parsing failed, using default scores"],
-                suggested_revision=SuggestedRevision(),
-                verdict="ACCEPT"  # Accept with warning rather than lose the card
             )
-    
-    def apply_revision(
-        self,
-        flashcard: Flashcard,
-        critique: CritiqueResult,
-    ) -> Flashcard:
-        """
-        Apply suggested revisions to a flashcard.
-        
-        Args:
-            flashcard: Original flashcard
-            critique: Critique with suggestions
-            
-        Returns:
-            Revised flashcard
-        """
-        new_question = critique.suggested_revision.question or flashcard.question
-        new_answer = critique.suggested_revision.answer or flashcard.answer
-        
-        return Flashcard(
-            question=new_question,
-            answer=new_answer,
-            tag=flashcard.tag,
-        )
 
 
 # =============================================================================
@@ -273,7 +242,7 @@ def validate_and_correct_cards(
     statistics = {
         "total": len(card_set.cards),
         "accepted": 0,
-        "revised": 0,
+        "accepted": 0,
         "rejected": 0,
         "avg_accuracy": 0.0,
         "avg_overall": 0.0,
@@ -291,12 +260,6 @@ def validate_and_correct_cards(
         if critique.verdict == "ACCEPT":
             accepted_cards.append(card)
             statistics["accepted"] += 1
-            
-        elif critique.verdict == "REVISE":
-            # Apply revisions and accept
-            revised_card = chain.apply_revision(card, critique)
-            accepted_cards.append(revised_card)
-            statistics["revised"] += 1
             
         else:  # REJECT
             statistics["rejected"] += 1

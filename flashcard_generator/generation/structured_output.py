@@ -25,6 +25,23 @@ from config import LLM_MODEL, LLM_TEMPERATURE, VALID_TAGS
 # PYDANTIC MODELS FOR STRICT VALIDATION
 # =============================================================================
 
+class Concept(BaseModel):
+    """Extracted knowledge concept."""
+    name: str = Field(..., description="Name or title of the concept")
+    type: Literal["definition", "principle", "relationship", "procedure", "example"] = Field(
+        ..., description="Type of the concept"
+    )
+    description: str = Field(..., description="Clear, accurate explanation from the source")
+    related_to: List[str] = Field(default_factory=list, description="List of related concepts")
+    source_quote: str = Field(..., description="Exact quote from context supporting this extraction")
+    difficulty: Literal["basic", "intermediate", "advanced"] = Field(..., description="Difficulty level")
+
+
+class ConceptList(BaseModel):
+    """List of extracted concepts."""
+    concepts: List[Concept] = Field(..., description="List of extracted concepts")
+
+
 class Flashcard(BaseModel):
     """Single flashcard with validation."""
     
