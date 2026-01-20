@@ -13,7 +13,7 @@ from typing import List, Optional, Tuple
 from pydantic import BaseModel, Field
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
-from langchain_google_genai import ChatGoogleGenerativeAI
+from llm.factory import get_llm
 
 import sys
 from pathlib import Path
@@ -141,8 +141,8 @@ class CritiqueChain:
             model_name: LLM model to use
             temperature: Generation temperature (lower for more consistent evaluation)
         """
-        self.model = ChatGoogleGenerativeAI(
-            model=model_name or LLM_MODEL,
+        self.model = get_llm(
+            model_name=model_name,
             temperature=temperature if temperature is not None else 0.1,  # Low temp for evaluation
         )
         

@@ -18,7 +18,7 @@ OLLAMA_EMBEDDINGS = OllamaEmbeddings(
 # =============================================================================
 # GENERATION CONFIGURATION
 # =============================================================================
-LLM_MODEL = "gemini-flash-latest"
+LLM_MODEL = OPENROUTER_MODEL
 LLM_TEMPERATURE = 0.1
 VALID_TAGS = ["definition", "concept", "procedure", "comparison", "application"]
 

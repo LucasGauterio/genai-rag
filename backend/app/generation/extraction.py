@@ -10,7 +10,7 @@ Analyzes retrieved context and extracts structured knowledge:
 from typing import List
 from langchain_core.documents import Document
 from langchain_core.prompts import ChatPromptTemplate
-from langchain_google_genai import ChatGoogleGenerativeAI
+from llm.factory import get_llm
 
 from .prompts import EXTRACTION_PROMPT
 from .structured_output import ConceptList
@@ -37,9 +37,9 @@ class ExtractorChain:
             model_name: LLM model to use
             temperature: Generation temperature
         """
-        self.model = ChatGoogleGenerativeAI(
-            model=model_name or LLM_MODEL,
-            temperature=temperature if temperature is not None else LLM_TEMPERATURE,
+        self.model = get_llm(
+            model_name=model_name,
+            temperature=temperature,
         )
         
         self.prompt = ChatPromptTemplate.from_template(EXTRACTION_PROMPT)

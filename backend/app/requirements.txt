@@ -22,3 +22,6 @@ langchain-ollama
 # Google Gemini
 langchain-google-genai
 pydantic
+
+# OpenRouter
+langchain-openai

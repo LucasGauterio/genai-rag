@@ -7,7 +7,7 @@ Applies pedagogical best practices for question design.
 
 from typing import List, Optional
 from langchain_core.prompts import ChatPromptTemplate
-from langchain_google_genai import ChatGoogleGenerativeAI
+from llm.factory import get_llm
 
 from .prompts import TRANSFORMATION_PROMPT
 
@@ -34,9 +34,9 @@ class TransformationChain:
             model_name: LLM model to use
             temperature: Generation temperature
         """
-        self.model = ChatGoogleGenerativeAI(
-            model=model_name or LLM_MODEL,
-            temperature=temperature if temperature is not None else LLM_TEMPERATURE,
+        self.model = get_llm(
+            model_name=model_name,
+            temperature=temperature,
         )
         
         self.prompt = ChatPromptTemplate.from_template(TRANSFORMATION_PROMPT)

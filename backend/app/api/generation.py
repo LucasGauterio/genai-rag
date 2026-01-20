@@ -145,8 +145,8 @@ def generate_flashcards(session_id: str):
         from config import MAX_FLASHCARDS
         # Limit the extracted concepts to the requested count or MAX_FLASHCARDS
         limit = min(count, MAX_FLASHCARDS)
-        if len(extracted) > limit:
-            extracted = random.sample(extracted, limit)
+        if len(extracted.concepts) > limit:
+            extracted.concepts = random.sample(extracted.concepts, limit)
         
         # 3. Transform to flashcards
         from generation import TransformationChain
