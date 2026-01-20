@@ -114,6 +114,10 @@ class SessionStore:
         # Prepare data
         ids, texts, metadatas = [], [], []
         for doc in documents:
+            # Skip empty chunks to prevent "empty embedding" errors
+            if not doc.page_content or not doc.page_content.strip():
+                continue
+
             chunk_id = f"{session_id}_{document_id}_p{doc.metadata.get('page_number', 0)}_c{doc.metadata.get('chunk_index', 0)}"
             ids.append(chunk_id)
             texts.append(doc.page_content)

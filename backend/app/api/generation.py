@@ -9,8 +9,6 @@ from llm import call_openrouter
 from utils.prompts import (
     build_context_with_citations,
     build_chat_prompt,
-    build_flashcard_prompt,
-    parse_flashcards,
 )
 
 
@@ -86,19 +84,21 @@ def chat_in_session(session_id: str):
 @generation_bp.route("/sessions/<session_id>/flashcards", methods=["POST"])
 def generate_flashcards(session_id: str):
     """
-    Generate flashcards from session documents.
+    Generate flashcards from session documents using advanced pipeline.
     
     Request:
         {
             "topic": "attention mechanism",
             "document_id": "optional - filter to specific doc",
-            "count": 10
+            "count": 10,
+            "validate": true (default)
         }
     
     Returns:
         {
-            "flashcards": [{ "question", "answer", "citation" }],
-            "citations": { ... }
+            "flashcards": [{ "question", "answer", "citation", "tag" }],
+            "citations": { ... },
+            "stats": { ... }
         }
     """
     store = get_session_store()
@@ -111,12 +111,13 @@ def generate_flashcards(session_id: str):
     topic = data.get("topic", "")
     document_id = data.get("document_id")
     count = data.get("count", 10)
+    should_validate = data.get("validate", True)
     
     if not topic:
         return jsonify({"error": "Missing topic"}), 400
     
     try:
-        # Retrieve relevant chunks
+        # 1. Retrieve relevant chunks
         chunks = store.search(
             session_id=session_id,
             query=topic,
@@ -131,19 +132,39 @@ def generate_flashcards(session_id: str):
                 "message": "No relevant content found"
             })
         
-        # Build context and prompt
+        # Build context and citations
         context, citations = build_context_with_citations(chunks)
-        prompt = build_flashcard_prompt(context, topic, count)
         
-        # Generate flashcards
-        response = call_openrouter(prompt)
-        flashcards = parse_flashcards(response)
+        # 2. Extract concepts
+        # We pass the formatted context string directly to preserve [1] markers
+        from generation import ExtractorChain
+        extractor = ExtractorChain()
+        extracted = extractor.extract(context)
+        
+        # 3. Transform to flashcards
+        from generation import TransformationChain
+        transformer = TransformationChain()
+        card_set = transformer.transform(extracted)
+        
+        # 4. Self-Correction (Optional)
+        stats = {}
+        if should_validate:
+            from validation import validate_and_correct_cards
+            card_set, stats = validate_and_correct_cards(card_set, context)
+            
+        # Limit to requested count
+        if len(card_set.cards) > count:
+            from generation.structured_output import FlashcardSet
+            card_set = FlashcardSet(cards=card_set.cards[:count])
         
         return jsonify({
-            "flashcards": flashcards,
+            "flashcards": [c.model_dump() for c in card_set.cards],
             "citations": citations,
             "topic": topic,
+            "stats": stats
         })
     
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         return jsonify({"error": str(e)}), 500
