@@ -17,8 +17,7 @@ from .structured_output import ConceptList
 
 import sys
 from pathlib import Path
-# Fix imports for backend
-from config import LLM_MODEL, LLM_TEMPERATURE
+from config import LLM_MODEL, LLM_TEMPERATURE, GOOGLE_API_KEY
 
 
 class ExtractorChain:
@@ -40,6 +39,7 @@ class ExtractorChain:
         self.model = ChatGoogleGenerativeAI(
             model=model_name or LLM_MODEL,
             temperature=temperature if temperature is not None else LLM_TEMPERATURE,
+            google_api_key=GOOGLE_API_KEY
         )
         
         self.prompt = ChatPromptTemplate.from_template(EXTRACTION_PROMPT)
