@@ -18,7 +18,7 @@ from llm.factory import get_llm
 import sys
 from pathlib import Path
 # Fix imports for backend
-from config import LLM_MODEL, LLM_TEMPERATURE
+from config import LLM_MODEL, LLM_TEMPERATURE, GOOGLE_API_KEY
 # Default MIN_CONFIDENCE_SCORE since it was in config.py of flashcard_generator
 MIN_CONFIDENCE_SCORE = 3.5 
 
@@ -144,6 +144,7 @@ class CritiqueChain:
         self.model = get_llm(
             model_name=model_name,
             temperature=temperature if temperature is not None else 0.1,  # Low temp for evaluation
+            google_api_key=GOOGLE_API_KEY
         )
         
         self.prompt = ChatPromptTemplate.from_template(CRITIQUE_PROMPT)

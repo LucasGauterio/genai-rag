@@ -14,7 +14,7 @@ from .prompts import TRANSFORMATION_PROMPT
 import sys
 from pathlib import Path
 # Fix imports for backend
-from config import LLM_MODEL, LLM_TEMPERATURE
+from config import LLM_MODEL, LLM_TEMPERATURE, GOOGLE_API_KEY
 from .structured_output import ConceptList, Flashcard, FlashcardSet
 
 
