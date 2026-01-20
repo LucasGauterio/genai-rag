@@ -18,7 +18,7 @@ from .prompts import STRUCTURED_OUTPUT_PROMPT
 import sys
 from pathlib import Path
 # Fix imports to use backend config
-from config import LLM_MODEL, LLM_TEMPERATURE, VALID_TAGS
+from config import LLM_MODEL, LLM_TEMPERATURE, VALID_TAGS, GOOGLE_API_KEY
 
 
 # =============================================================================
@@ -158,6 +158,7 @@ def fix_json_with_llm(broken_json: str) -> str:
     model = ChatGoogleGenerativeAI(
         model=LLM_MODEL,
         temperature=0,  # Zero temperature for deterministic fixing
+        google_api_key=GOOGLE_API_KEY
     )
     
     prompt = ChatPromptTemplate.from_template(STRUCTURED_OUTPUT_PROMPT)
