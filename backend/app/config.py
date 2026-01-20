@@ -26,3 +26,5 @@ GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 if not GOOGLE_API_KEY:
     # Warn but don't fail immediately to allow offline dev if not generating
     print("WARNING: GOOGLE_API_KEY not found. Flashcard generation will fail.")
+
+MAX_FLASHCARDS = 10

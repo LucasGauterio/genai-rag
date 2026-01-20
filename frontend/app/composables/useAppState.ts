@@ -40,7 +40,7 @@ export type CitationsMap = Record<string, Citation>
 
 // Flashcard count bounds
 export const FLASHCARD_COUNT_MIN = 3
-export const FLASHCARD_COUNT_MAX = 30
+export const FLASHCARD_COUNT_MAX = 10
 
 // Client-only shared state for documents (File objects can't be serialized)
 // This is safe because documents are only manipulated on the client
