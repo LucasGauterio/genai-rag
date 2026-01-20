@@ -17,5 +17,8 @@ pypdf
 langchain
 langchain-core
 langchain-experimental
-langchain-ollama# Optional: for cross-encoder reranking
-# sentence-transformers
+langchain-ollama
+
+# Google Gemini
+langchain-google-genai
+pydantic
