@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import type { Document } from '~/composables/useAppState'
-import { FLASHCARD_COUNT_MIN, FLASHCARD_COUNT_MAX } from '~/composables/useAppState'
+import type { Document } from '~/composables/useAppState';
+import { FLASHCARD_COUNT_MAX, FLASHCARD_COUNT_MIN } from '~/composables/useAppState';
 
 const {
   documents,
@@ -12,11 +12,83 @@ const {
   flashcardCount,
   flashcards,
   openFlashcardPanel,
-  generateFlashcards
+  generateFlashcards,
+  sessionId,
+  sessionLoadState,
 } = useAppState()
 
-// Check if flashcards already exist
-const hasFlashcards = computed(() => flashcards.value.length > 0)
+const sessionFlashcards = ref<Record<string, any[]>>({})
+
+const hasFlashcards = computed(() => {
+  const currentSessionId = sessionId.value
+  if (!currentSessionId) return false
+  return (sessionFlashcards.value[currentSessionId] || []).length > 0
+})
+
+const currentFlashcardCount = computed(() => {
+  const id = sessionId.value
+  return id ? (sessionFlashcards.value[id]?.length || 0) : 0
+})
+
+interface SessionResponse {
+  session_id: string;
+  created_at: string;
+  chunk_count: number;
+  documents: Array<{
+    document_id: string;
+    filename: string;
+    chunks: number;
+  }>;
+}
+
+// Watch for session changes and fetch documents
+watch(() => sessionId.value, async (newSessionId, oldSessionId) => {
+  // Save previous session flashcards
+  if (oldSessionId) {
+    sessionFlashcards.value[oldSessionId] = [...flashcards.value]
+  }
+
+  // CLEAR working buffer
+  flashcards.value = []
+
+  if (!newSessionId) {
+    documents.value = []
+    sessionFlashcards.value = {}
+    return
+  }
+
+  try {
+    // Restore flashcards for this session
+    if (sessionFlashcards.value[newSessionId]) {
+      flashcards.value = [...sessionFlashcards.value[newSessionId]]
+    }
+    sessionLoadState.value = 'loading'
+    const response = await $fetch<SessionResponse>(
+      `/api/sessions/${newSessionId}`
+    )
+
+    documents.value = []
+
+    response.documents.forEach(doc => {
+      documents.value.push({
+        file: new File([], doc.filename),
+        status: 'ingested',
+        chunksIngested: doc.chunks
+      })
+    })
+    sessionLoadState.value = 'idle'
+  } catch (error) {
+    console.error('Failed to fetch documents for session:', error)
+    sessionLoadState.value = 'error'
+  }
+})
+
+watch(flashcards, (newFlashcards) => {
+  const currentSessionId = sessionId.value
+  if (currentSessionId && newFlashcards.length > 0) {
+    sessionFlashcards.value[currentSessionId] = [...newFlashcards]
+  }
+})
 
 
 const fileInput = ref<HTMLInputElement | null>(null)
@@ -38,14 +110,12 @@ async function handleFileChange(event: Event) {
         if (name.endsWith('.txt') || name.endsWith('.md') || name.endsWith('.pdf')) {
           const index = documents.value.length - 1
           await ingestDocument(index)
+          documents.value[index]!.status = 'ingested'
         }
-      }
+      } 
     }
   }
-  // Reset input so same file can be selected again
-  if (fileInput.value) {
-    fileInput.value.value = ''
-  }
+  if (fileInput.value) fileInput.value.value = ''
 }
 
 function getFileIcon(doc: Document): string {
@@ -79,6 +149,7 @@ function formatSize(bytes: number): string {
   if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'
   return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
 }
+
 </script>
 
 <template>
@@ -147,7 +218,7 @@ function formatSize(bytes: number): string {
         class="flashcard-button"
         @click="openFlashcardPanel"
       >
-        View Flashcards ({{ flashcards.length }})
+        View Flashcards ({{ currentFlashcardCount }})
       </UButton>
 
       <!-- Generate new flashcards -->

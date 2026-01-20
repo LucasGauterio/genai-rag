@@ -14,23 +14,5 @@ services:
       "ollama serve & sleep 5 && ollama pull nomic-embed-text && wait"
     ]
 
-  chroma:
-    image: ghcr.io/chroma-core/chroma:0.5.20
-    container_name: genai-chroma
-    restart: unless-stopped
-    environment:
-      - IS_PERSISTENT=TRUE
-      - ANONYMIZED_TELEMETRY=FALSE
-    volumes:
-      - chroma_data:/chroma/chroma
-    ports:
-      - "8000:8000"
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/heartbeat"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-
 volumes:
   ollama_data:
-  chroma_data:

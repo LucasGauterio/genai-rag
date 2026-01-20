@@ -29,6 +29,13 @@ export interface Citation {
     end_offset: number
 }
 
+export interface Session {
+    id: string
+    name: string
+    createdAt: string
+    documents: Document[]
+}
+
 export type CitationsMap = Record<string, Citation>
 
 // Flashcard count bounds
@@ -51,6 +58,10 @@ export function useAppState() {
     const messages = useState<Message[]>('messages', () => [])
     const currentPrompt = useState<string>('currentPrompt', () => '')
     const sessionId = useState<string | null>('sessionId', () => null)
+    const sessionLoadState = useState<'idle' | 'loading' | 'error'>(
+        'sessionLoadState',
+        () => 'idle'
+    )
     const flashcards = useState<Flashcard[]>('flashcards', () => [])
     const citations = useState<CitationsMap>('citations', () => ({}))
     const isFlashcardPanelOpen = useState<boolean>('isFlashcardPanelOpen', () => false)
@@ -223,6 +234,7 @@ export function useAppState() {
         currentPrompt,
         documents,
         sessionId,
+        sessionLoadState,
         hasIngestedDocuments,
         addMessage,
         addDocument,

@@ -1,5 +1,6 @@
 <template>
   <div class="app-shell">
+    <SessionPanel />
     <DocumentsPanel />
     <ChatPanel />
     <FlashcardPanel />
