@@ -6,3 +6,4 @@ ragenv
 chroma_db
 venv
 images/
+backend/app/chroma_sessions

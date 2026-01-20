@@ -2,6 +2,7 @@
   <div class="app-shell">
     <DocumentsPanel />
     <ChatPanel />
+    <FlashcardPanel />
   </div>
 </template>
 
@@ -25,5 +26,13 @@
      which is required for nested flex children to be able to scroll */
   min-height: 0;
   overflow: hidden;
+}
+
+/* Placeholder for DocumentsPanel during SSR */
+.documents-panel-placeholder {
+  width: 280px;
+  flex-shrink: 0;
+  background-color: var(--ui-bg-muted);
+  border-right: 1px solid var(--ui-border);
 }
 </style>

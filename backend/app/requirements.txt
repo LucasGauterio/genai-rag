@@ -1,18 +1,21 @@
-# Flask and web
-flask>=3.0.0
-flask-cors>=4.0.0
+# Flask
+flask
+flask-cors
 
-# Vector database
-chromadb>=0.4.0
+# Utils
+requests
+python-dotenv
 
-# BM25 retrieval
-rank-bm25>=0.2.2
+# Vector DB & Retrieval
+chromadb
+rank-bm25
 
-# PDF processing
-pypdf>=4.0.0
+# PDF Processing
+pypdf
 
-# HTTP requests (for OpenRouter API)
-requests>=2.31.0
-
-# Environment variables
-python-dotenv>=1.0.0
+# LangChain (for semantic chunking)
+langchain
+langchain-core
+langchain-experimental
+langchain-ollama# Optional: for cross-encoder reranking
+# sentence-transformers

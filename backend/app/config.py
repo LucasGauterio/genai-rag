@@ -1,11 +1,16 @@
 import os
-from pathlib import Path
-from dotenv import load_dotenv
-
-# Load .env from project root (two directories up from backend/app)
-env_path = Path(__file__).resolve().parent.parent.parent / ".env"
-load_dotenv(env_path)
+from langchain_ollama import OllamaEmbeddings
 
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
-OPENROUTER_MODEL = "nvidia/nemotron-3-nano-30b-a3b:free"  # Free model for OpenRouter free tier
+OPENROUTER_MODEL = os.getenv(
+    "OPENROUTER_MODEL",
+    "openai/gpt-4o-mini"
+)
 
+OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+EMBEDDING_MODEL = os.getenv("OLLAMA_EMBEDDING_MODEL", "nomic-embed-text")
+# Embedding model for semantic chunking and retrieval
+OLLAMA_EMBEDDINGS = OllamaEmbeddings(
+    model=EMBEDDING_MODEL,
+    base_url=OLLAMA_BASE_URL,
+)

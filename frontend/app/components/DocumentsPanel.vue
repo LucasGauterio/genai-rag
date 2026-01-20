@@ -1,7 +1,23 @@
 <script setup lang="ts">
 import type { Document } from '~/composables/useAppState'
+import { FLASHCARD_COUNT_MIN, FLASHCARD_COUNT_MAX } from '~/composables/useAppState'
 
-const { documents, addDocument, removeDocument, ingestDocument } = useAppState()
+const {
+  documents,
+  addDocument,
+  removeDocument,
+  ingestDocument,
+  hasIngestedDocuments,
+  isGeneratingFlashcards,
+  flashcardCount,
+  flashcards,
+  openFlashcardPanel,
+  generateFlashcards
+} = useAppState()
+
+// Check if flashcards already exist
+const hasFlashcards = computed(() => flashcards.value.length > 0)
+
 
 const fileInput = ref<HTMLInputElement | null>(null)
 
@@ -89,6 +105,64 @@ function formatSize(bytes: number): string {
       >
         Add source
       </UButton>
+      
+      <!-- Flashcard Count Selector -->
+      <div class="flashcard-count-section">
+        <label class="count-label">Number of flashcards</label>
+        <div class="count-input-wrapper">
+          <UButton
+            icon="i-lucide-minus"
+            color="neutral"
+            variant="ghost"
+            size="xs"
+            :disabled="flashcardCount <= FLASHCARD_COUNT_MIN"
+            @click="flashcardCount = Math.max(FLASHCARD_COUNT_MIN, flashcardCount - 1)"
+          />
+          <input
+            v-model.number="flashcardCount"
+            type="number"
+            :min="FLASHCARD_COUNT_MIN"
+            :max="FLASHCARD_COUNT_MAX"
+            class="count-input"
+            @blur="flashcardCount = Math.min(FLASHCARD_COUNT_MAX, Math.max(FLASHCARD_COUNT_MIN, flashcardCount || FLASHCARD_COUNT_MIN))"
+          />
+          <UButton
+            icon="i-lucide-plus"
+            color="neutral"
+            variant="ghost"
+            size="xs"
+            :disabled="flashcardCount >= FLASHCARD_COUNT_MAX"
+            @click="flashcardCount = Math.min(FLASHCARD_COUNT_MAX, flashcardCount + 1)"
+          />
+        </div>
+      </div>
+
+      <!-- View existing flashcards (no new request) -->
+      <UButton
+        v-if="hasFlashcards"
+        icon="i-lucide-eye"
+        color="primary"
+        variant="soft"
+        block
+        class="flashcard-button"
+        @click="openFlashcardPanel"
+      >
+        View Flashcards ({{ flashcards.length }})
+      </UButton>
+
+      <!-- Generate new flashcards -->
+      <UButton
+        icon="i-lucide-layers"
+        color="primary"
+        :variant="hasFlashcards ? 'outline' : 'solid'"
+        block
+        class="flashcard-button"
+        :loading="isGeneratingFlashcards"
+        :disabled="!hasIngestedDocuments"
+        @click="generateFlashcards"
+      >
+        {{ hasFlashcards ? 'Regenerate' : 'Generate Flashcards' }}
+      </UButton>
     </div>
     
     <div class="documents-list">
@@ -163,6 +237,57 @@ function formatSize(bytes: number): string {
 .upload-section {
   padding: 12px 16px;
   flex-shrink: 0;
+}
+
+.flashcard-button {
+  margin-top: 8px;
+}
+
+.flashcard-count-section {
+  margin-top: 12px;
+  padding: 10px 12px;
+  background-color: var(--ui-bg);
+  border-radius: 8px;
+  border: 1px solid var(--ui-border);
+}
+
+.count-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--ui-text-muted);
+  margin-bottom: 8px;
+}
+
+.count-input-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.count-input {
+  width: 48px;
+  text-align: center;
+  padding: 4px 6px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ui-text);
+  background-color: var(--ui-bg-elevated);
+  border: 1px solid var(--ui-border);
+  border-radius: 6px;
+  -moz-appearance: textfield;
+}
+
+.count-input::-webkit-outer-spin-button,
+.count-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.count-input:focus {
+  outline: none;
+  border-color: var(--ui-primary);
 }
 
 .hidden-input {
