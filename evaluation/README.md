@@ -208,7 +208,7 @@ The evaluation uses flexible keyword matching:
 
 ## Known Limitations
 
-This evaluation framework has the following limitations, which are acceptable given the project scope:
+The following limitations are known and expected, given the scope of this project:
 
 ### Sample Size
 The evaluation runs on 8 positive queries and 3 negative test cases. While sufficient for demonstrating system functionality and identifying major issues, this sample size is small for statistically significant conclusions.
