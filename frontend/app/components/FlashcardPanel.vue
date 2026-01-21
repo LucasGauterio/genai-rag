@@ -36,8 +36,10 @@ function parseAnswerWithCitations(answer: string, citationsMap: CitationsMap): A
   const regex = /\[(\d+)\]/g
   let lastIndex = 0
   let match
+  let hasMatches = false
 
   while ((match = regex.exec(answer)) !== null) {
+    hasMatches = true
     // Add text before the citation
     if (match.index > lastIndex) {
       segments.push({
@@ -59,10 +61,18 @@ function parseAnswerWithCitations(answer: string, citationsMap: CitationsMap): A
   }
 
   // Add remaining text after last citation
-  if (lastIndex < answer.length) {
+  if (hasMatches && lastIndex < answer.length) {
     segments.push({
       type: 'text',
       content: answer.slice(lastIndex)
+    })
+  }
+
+  // If no matches found, return the entire answer as a single text segment
+  if (!hasMatches) {
+    segments.push({
+      type: 'text',
+      content: answer
     })
   }
 
@@ -231,6 +241,7 @@ watch(isFlashcardPanelOpen, (isOpen) => {
                   <div class="card-face card-back">
                     <div class="card-label">Answer</div>
                     <div class="card-content answer-content">
+                      <!-- Display answer text with any inline citations -->
                       <template v-for="(segment, idx) in answerSegments" :key="idx">
                         <span v-if="segment.type === 'text'">{{ segment.content }}</span>
                         <UTooltip
@@ -245,6 +256,19 @@ watch(isFlashcardPanelOpen, (isOpen) => {
                           </span>
                         </UTooltip>
                         <span v-else class="citation-badge citation-unknown">{{ segment.content }}</span>
+                      </template>
+                      
+                      <!-- If citation field exists and wasn't inline, append it -->
+                      <template v-if="currentCard?.citation && currentCardCitation && !currentCard.answer.includes(currentCard.citation)">
+                        <span> </span>
+                        <UTooltip :text="`${currentCardCitation.source} (p.${currentCardCitation.page})`">
+                          <span
+                            class="citation-badge"
+                            @click.stop="showCitationDetails(currentCardCitation)"
+                          >
+                            {{ currentCard.citation }}
+                          </span>
+                        </UTooltip>
                       </template>
                     </div>
 
