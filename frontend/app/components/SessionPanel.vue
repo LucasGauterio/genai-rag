@@ -85,100 +85,89 @@
   </div>
 </template>
 
-<script setup>
-import { onMounted, ref } from 'vue'
-import { useAppState } from '~/composables/useAppState'
-
+<script setup lang="ts">
 const { sessionId: selectedSessionId, sessionLoadState } = useAppState()
-const sessions = ref([])
+
+interface Session {
+  session_id: string
+  name?: string
+  created_at: string
+  chunk_count?: number
+}
+
+const sessions = ref<Session[]>([])
 const creatingSession = ref(false)
 const expanded = ref(true)
 
-const formatDate = (dateString) => {
+function formatDate(dateString: string): string {
   const date = new Date(dateString)
-  return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
+  return `${date.toLocaleDateString()} ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
 }
 
-const fetchSessions = async () => {
+function getStatusIcon(state: string): string {
+  const icons: Record<string, string> = {
+    error: 'i-lucide-alert-circle',
+    loading: 'i-lucide-loader-2',
+    idle: 'i-lucide-check-circle'
+  }
+  return icons[state] || 'i-lucide-check-circle'
+}
+
+async function fetchSessions() {
   try {
-    const response = await $fetch('/api/sessions')
-    sessions.value = response.sessions || response
-   sessions.value.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+    const response = await $fetch<{ sessions?: Session[] } | Session[]>('/api/sessions')
+    sessions.value = Array.isArray(response) ? response : (response.sessions || [])
+    sessions.value.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+
     if (sessions.value.length > 0 && !selectedSessionId.value) {
       selectedSessionId.value = sessions.value[0].session_id
     } else if (sessions.value.length === 0) {
-      createSession();
+      createSession()
     }
-  } catch (error) {
-    console.error('Failed to fetch sessions:', error)
+  } catch (err) {
+    console.error('Failed to fetch sessions:', err)
   }
 }
 
-// Create new session
-const createSession = async () => {
+async function createSession() {
   creatingSession.value = true
   try {
-    const response = await $fetch('/api/sessions', {
-      method: 'POST'
-    })
-    if (sessions.value.length === 0) {
-      sessions.value = []
-    }
+    const response = await $fetch<Session>('/api/sessions', { method: 'POST' })
     sessions.value.unshift(response)
     selectedSessionId.value = response.session_id
-  } catch (error) {
-    console.error('Failed to create session:', error)
+  } catch (err) {
+    console.error('Failed to create session:', err)
   } finally {
     creatingSession.value = false
     fetchSessions()
   }
 }
 
-// Select session
-const selectSession = (sessionId) => {
+function selectSession(sessionId: string) {
   selectedSessionId.value = sessionId
 }
 
-// Delete session
-const deleteSession = async (sessionId) => {
+async function deleteSession(sessionId: string) {
   if (sessions.value.length <= 1) return
-  
+
   try {
-    await $fetch(`/api/sessions/${sessionId}`, {
-      method: 'DELETE'
-    })
+    await $fetch(`/api/sessions/${sessionId}`, { method: 'DELETE' })
     sessions.value = sessions.value.filter(s => s.session_id !== sessionId)
     if (selectedSessionId.value === sessionId) {
-      // Select the first remaining session
-      selectedSessionId.value = sessions.value.length > 0 ? sessions.value[0].session_id : null
+      selectedSessionId.value = sessions.value[0]?.session_id || null
     }
-  } catch (error) {
-    console.error('Failed to delete session:', error)
-  }
-  finally {
+  } catch (err) {
+    console.error('Failed to delete session:', err)
+  } finally {
     fetchSessions()
   }
 }
 
-// Toggle panel expansion
-const toggleExpanded = () => {
+function toggleExpanded() {
   expanded.value = !expanded.value
 }
 
-function getStatusIcon(sessionLoadState) {
-  switch(sessionLoadState) {
-    case 'error':
-      return 'i-lucide-alert-circle'
-    case 'loading':
-      return 'i-lucide-loader-2'
-    case 'idle':
-      return 'i-lucide-check-circle'
-  }
-}
-
-onMounted(() => {
-  fetchSessions()
-})
+onMounted(fetchSessions)
 </script>
 
 <style scoped>
@@ -190,9 +179,6 @@ onMounted(() => {
   background-color: var(--ui-bg-muted);
   border-right: 1px solid var(--ui-primary);
   min-height: 0;
-  
-  /* border-radius: 8px; */
-  /* margin: 8px; */
   overflow: hidden;
   transition: width 0.2s ease;
 }
@@ -323,15 +309,6 @@ onMounted(() => {
   border-top: 1px solid var(--ui-border);
 }
 
-.toggle-button :deep(button) {
-  cursor: pointer;
-}
-
-.delete-button :deep(button) {
-  cursor: pointer;
-}
-
-/* Collapsed state styles */
 .session-panel.collapsed .panel-title,
 .session-panel.collapsed .sessions-list,
 .session-panel.collapsed .panel-footer {

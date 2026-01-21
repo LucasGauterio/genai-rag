@@ -8,11 +8,16 @@ const messagesContainer = ref<HTMLElement | null>(null)
 const activeCitation = ref<Citation | null>(null)
 const showCitationModal = ref(false)
 
-// Parse message content and split into segments (text and citation refs)
 interface MessageSegment {
   type: 'text' | 'citation'
   content: string
   citation?: Citation
+}
+
+interface SummarizeResponse {
+  response: string
+  citations?: CitationsMap
+  chunksUsed?: number
 }
 
 function parseMessageWithCitations(content: string, citations?: CitationsMap): MessageSegment[] {
@@ -29,8 +34,7 @@ function parseMessageWithCitations(content: string, citations?: CitationsMap): M
     if (match.index > lastIndex) {
       segments.push({ type: 'text', content: content.slice(lastIndex, match.index) })
     }
-    const citationKey = match[0]
-    segments.push({ type: 'citation', content: citationKey, citation: citations[citationKey] })
+    segments.push({ type: 'citation', content: match[0], citation: citations[match[0]] })
     lastIndex = regex.lastIndex
   }
 
@@ -42,10 +46,9 @@ function parseMessageWithCitations(content: string, citations?: CitationsMap): M
 }
 
 function showCitationDetails(citation: Citation | undefined) {
-  if (citation) {
-    activeCitation.value = citation
-    showCitationModal.value = true
-  }
+  if (!citation) return
+  activeCitation.value = citation
+  showCitationModal.value = true
 }
 
 function hideCitationDetails() {
@@ -53,31 +56,21 @@ function hideCitationDetails() {
   activeCitation.value = null
 }
 
-interface SummarizeResponse {
-  response: string
-  citations?: CitationsMap
-  chunksUsed?: number
-}
-
 async function sendMessage() {
   const prompt = currentPrompt.value.trim()
   if (!prompt || isLoading.value) return
-  
-  // Check if we have a session with documents
+
   if (!sessionId.value || !hasIngestedDocuments.value) {
     addMessage('assistant', 'Please upload and ingest documents first before asking questions.')
     return
   }
-  
-  // Add user message immediately
+
   addMessage('user', prompt)
   clearPrompt()
-  
-  // Scroll to bottom after adding user message
+
   await nextTick()
   scrollToBottom()
-  
-  // Send to API
+
   isLoading.value = true
   try {
     const response = await $fetch<SummarizeResponse>('/api/summarize', {
@@ -88,10 +81,8 @@ async function sendMessage() {
         documents: getDocumentMetadata()
       }
     })
-    
-    // Add message with citations
     addMessage('assistant', response.response, response.citations)
-  } catch (error) {
+  } catch {
     addMessage('assistant', 'Sorry, there was an error processing your request.')
   } finally {
     isLoading.value = false
@@ -228,7 +219,6 @@ function handleKeydown(event: KeyboardEvent) {
   flex: 1;
   display: flex;
   flex-direction: column;
-  /* CRITICAL: min-height: 0 allows flex child to shrink and enable scrolling */
   min-height: 0;
   background-color: var(--ui-bg);
 }
@@ -237,7 +227,6 @@ function handleKeydown(event: KeyboardEvent) {
   flex: 1;
   overflow-y: auto;
   padding: 24px;
-  /* CRITICAL: min-height: 0 enables scrolling in flex child */
   min-height: 0;
 }
 
@@ -339,7 +328,6 @@ function handleKeydown(event: KeyboardEvent) {
   flex: 1;
 }
 
-/* Citation Styles */
 .citation-badge {
   display: inline-flex;
   align-items: center;
@@ -367,7 +355,6 @@ function handleKeydown(event: KeyboardEvent) {
   background-color: var(--ui-bg-elevated);
 }
 
-/* Citation Modal */
 .citation-modal {
   padding: 20px;
   background: var(--ui-bg);

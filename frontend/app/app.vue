@@ -24,7 +24,6 @@ useSeoMeta({
 </template>
 
 <style>
-/* Ensure UApp fills the full height */
 .u-app {
   height: 100%;
   display: flex;
