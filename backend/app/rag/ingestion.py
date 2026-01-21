@@ -1,7 +1,3 @@
-"""
-Ingestion service for RAG system.
-Handles file processing, text extraction, chunking, and storage.
-"""
 import uuid
 from typing import BinaryIO, Dict, Any, Union
 
@@ -14,17 +10,7 @@ def ingest_document(
     filename: str, 
     session_id: str
 ) -> Dict[str, Any]:
-    """
-    Ingest a document into the specified session.
-    
-    Args:
-        file_obj: File-like object (opened in binary mode for PDF, or compatible stream)
-        filename: Name of the file (used for type detection and metadata)
-        session_id: ID of the session to add documents to
-        
-    Returns:
-        Dict containing operation result/stats
-    """
+   
     store = get_session_store()
     document_id = str(uuid.uuid4())
     all_docs = []
@@ -32,7 +18,6 @@ def ingest_document(
     filename_lower = filename.lower()
     
     if filename_lower.endswith(".pdf"):
-        # extract_pdf_text expects a binary file stream
         pages = extract_pdf_text(file_obj)
         
         if not pages:
@@ -48,10 +33,6 @@ def ingest_document(
             all_docs.extend(page_docs)
             
     elif filename_lower.endswith((".txt", ".md")):
-        # Read text content
-        # If file_obj is bytes (from open(..., 'rb')), decode it
-        # If it's a string buffer, use as is. 
-        # Flask FileStorage.read() returns bytes.
         content = file_obj.read()
         if isinstance(content, bytes):
             text = content.decode("utf-8")
@@ -71,7 +52,6 @@ def ingest_document(
     if not all_docs:
         raise ValueError("No chunks produced from document")
 
-    # Store in session's collection
     result = store.add_documents(
         session_id=session_id,
         documents=all_docs,

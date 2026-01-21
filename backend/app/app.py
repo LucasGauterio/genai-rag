@@ -8,9 +8,6 @@ def create_app():
     app = Flask(__name__)
     CORS(app)
 
-    # Session-based API (primary architecture)
-    # Each chat session = one ChromaDB collection
-    # Documents isolated per session, cleaned up on close
     app.register_blueprint(sessions_bp, url_prefix="/api")
     app.register_blueprint(generation_bp, url_prefix="/api")
 

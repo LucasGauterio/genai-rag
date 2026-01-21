@@ -1,12 +1,6 @@
-"""
-Prompt templates for LLM generation.
-"""
-
 import re
 from typing import List, Dict
 
-
-# --- System Prompts ---
 
 SYSTEM_PROMPTS = {
     "chat": """You are a helpful study assistant. Answer questions based on the provided sources.
@@ -37,8 +31,6 @@ def get_task_instruction(mode: str) -> str:
     """Get task instruction based on mode."""
     return TASK_INSTRUCTIONS.get(mode, "respond")
 
-
-# --- Context Building ---
 
 def build_context_with_citations(chunks: List[Dict]) -> tuple[str, Dict]:
     """
@@ -109,13 +101,10 @@ Sources:
 Generate {count} flashcards:"""
 
 
-# --- Response Parsing ---
-
 def parse_flashcards(text: str) -> List[Dict]:
     """Parse flashcard format from LLM response."""
     flashcards = []
     
-    # Pattern: Q: ... A: ...
     pattern = r'Q:\s*(.+?)\s*A:\s*(.+?)(?=Q:|$)'
     matches = re.findall(pattern, text, re.DOTALL | re.IGNORECASE)
     
