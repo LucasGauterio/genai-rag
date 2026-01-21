@@ -3,28 +3,24 @@ import type { Flashcard, Citation, CitationsMap } from '~/composables/useAppStat
 
 const { flashcards, citations, isFlashcardPanelOpen, isGeneratingFlashcards, closeFlashcardPanel } = useAppState()
 
-// Local state
 const currentIndex = ref(0)
 const isFlipped = ref(false)
 const panelRef = ref<HTMLElement | null>(null)
 const activeCitation = ref<Citation | null>(null)
 const showCitationPopover = ref(false)
 
-// Computed
 const currentCard = computed<Flashcard | undefined>(() => flashcards.value[currentIndex.value])
 const totalCards = computed(() => flashcards.value.length)
 const hasCards = computed(() => totalCards.value > 0)
 const canGoPrev = computed(() => currentIndex.value > 0)
 const canGoNext = computed(() => currentIndex.value < totalCards.value - 1)
 
-// Get primary citation for the current card (for footer display)
 const currentCardCitation = computed<Citation | null>(() => {
   const card = currentCard.value
   if (!card?.citation) return null
   return citations.value[card.citation] || null
 })
 
-// Parse answer text and split into segments (text and citation refs)
 interface AnswerSegment {
   type: 'text' | 'citation'
   content: string
@@ -36,61 +32,31 @@ function parseAnswerWithCitations(answer: string, citationsMap: CitationsMap): A
   const regex = /\[(\d+)\]/g
   let lastIndex = 0
   let match
-  let hasMatches = false
 
   while ((match = regex.exec(answer)) !== null) {
-    hasMatches = true
-    // Add text before the citation
     if (match.index > lastIndex) {
-      segments.push({
-        type: 'text',
-        content: answer.slice(lastIndex, match.index)
-      })
+      segments.push({ type: 'text', content: answer.slice(lastIndex, match.index) })
     }
-
-    // Add the citation reference
-    const citationKey = match[0] // e.g., "[4]"
-    const citation = citationsMap[citationKey]
-    segments.push({
-      type: 'citation',
-      content: citationKey,
-      citation: citation
-    })
-
+    segments.push({ type: 'citation', content: match[0], citation: citationsMap[match[0]] })
     lastIndex = regex.lastIndex
   }
 
-  // Add remaining text after last citation
-  if (hasMatches && lastIndex < answer.length) {
-    segments.push({
-      type: 'text',
-      content: answer.slice(lastIndex)
-    })
+  if (lastIndex < answer.length) {
+    segments.push({ type: 'text', content: answer.slice(lastIndex) })
   }
 
-  // If no matches found, return the entire answer as a single text segment
-  if (!hasMatches) {
-    segments.push({
-      type: 'text',
-      content: answer
-    })
-  }
-
-  return segments
+  return segments.length > 0 ? segments : [{ type: 'text', content: answer }]
 }
 
 const answerSegments = computed(() => {
-  const card = currentCard.value
-  if (!card?.answer) return []
-  return parseAnswerWithCitations(card.answer, citations.value)
+  if (!currentCard.value?.answer) return []
+  return parseAnswerWithCitations(currentCard.value.answer, citations.value)
 })
 
-// Citation popover methods
 function showCitationDetails(citation: Citation | undefined) {
-  if (citation) {
-    activeCitation.value = citation
-    showCitationPopover.value = true
-  }
+  if (!citation) return
+  activeCitation.value = citation
+  showCitationPopover.value = true
 }
 
 function hideCitationDetails() {
@@ -98,27 +64,18 @@ function hideCitationDetails() {
   activeCitation.value = null
 }
 
-// Truncate text for display
-function truncateText(text: string, maxLength: number = 150): string {
-  if (text.length <= maxLength) return text
-  return text.slice(0, maxLength).trim() + '...'
-}
-
-// Methods
 function nextCard() {
-  if (canGoNext.value) {
-    currentIndex.value++
-    isFlipped.value = false
-    hideCitationDetails()
-  }
+  if (!canGoNext.value) return
+  currentIndex.value++
+  isFlipped.value = false
+  hideCitationDetails()
 }
 
 function prevCard() {
-  if (canGoPrev.value) {
-    currentIndex.value--
-    isFlipped.value = false
-    hideCitationDetails()
-  }
+  if (!canGoPrev.value) return
+  currentIndex.value--
+  isFlipped.value = false
+  hideCitationDetails()
 }
 
 function flipCard() {
@@ -127,7 +84,6 @@ function flipCard() {
 
 function handleClose() {
   closeFlashcardPanel()
-  // Reset state when closing
   currentIndex.value = 0
   isFlipped.value = false
   hideCitationDetails()
@@ -143,15 +99,9 @@ function handleKeydown(event: KeyboardEvent) {
   if (!isFlashcardPanelOpen.value) return
 
   switch (event.key) {
-    case 'Escape':
-      handleClose()
-      break
-    case 'ArrowLeft':
-      prevCard()
-      break
-    case 'ArrowRight':
-      nextCard()
-      break
+    case 'Escape': handleClose(); break
+    case 'ArrowLeft': prevCard(); break
+    case 'ArrowRight': nextCard(); break
     case ' ':
     case 'Enter':
       event.preventDefault()
@@ -160,16 +110,9 @@ function handleKeydown(event: KeyboardEvent) {
   }
 }
 
-// Lifecycle
-onMounted(() => {
-  document.addEventListener('keydown', handleKeydown)
-})
+onMounted(() => document.addEventListener('keydown', handleKeydown))
+onUnmounted(() => document.removeEventListener('keydown', handleKeydown))
 
-onUnmounted(() => {
-  document.removeEventListener('keydown', handleKeydown)
-})
-
-// Reset state when panel opens
 watch(isFlashcardPanelOpen, (isOpen) => {
   if (isOpen) {
     currentIndex.value = 0
@@ -411,7 +354,6 @@ watch(isFlashcardPanelOpen, (isOpen) => {
   overflow-y: auto;
 }
 
-/* Loading State */
 .loading-state {
   flex: 1;
   display: flex;
@@ -433,7 +375,6 @@ watch(isFlashcardPanelOpen, (isOpen) => {
   to { transform: rotate(360deg); }
 }
 
-/* Empty State */
 .empty-state {
   flex: 1;
   display: flex;
@@ -461,7 +402,6 @@ watch(isFlashcardPanelOpen, (isOpen) => {
   opacity: 0.7;
 }
 
-/* Carousel */
 .carousel {
   flex: 1;
   display: flex;
@@ -476,7 +416,6 @@ watch(isFlashcardPanelOpen, (isOpen) => {
   color: var(--ui-text-muted);
 }
 
-/* Card Container - 3D Flip */
 .card-container {
   flex: 1;
   perspective: 1000px;
@@ -541,14 +480,12 @@ watch(isFlashcardPanelOpen, (isOpen) => {
   opacity: 0.7;
 }
 
-/* Navigation */
 .card-navigation {
   display: flex;
   justify-content: center;
   gap: 12px;
 }
 
-/* Keyboard Hints */
 .keyboard-hints {
   display: flex;
   justify-content: center;
@@ -564,7 +501,6 @@ watch(isFlashcardPanelOpen, (isOpen) => {
   gap: 4px;
 }
 
-/* Citation Badges */
 .answer-content {
   display: inline;
 }
@@ -600,7 +536,6 @@ watch(isFlashcardPanelOpen, (isOpen) => {
   transform: none;
 }
 
-/* Source Footer */
 .source-footer {
   display: flex;
   align-items: center;
@@ -625,7 +560,6 @@ watch(isFlashcardPanelOpen, (isOpen) => {
   white-space: nowrap;
 }
 
-/* Citation Modal */
 .citation-modal {
   padding: 16px;
   min-width: 280px;
@@ -708,7 +642,6 @@ watch(isFlashcardPanelOpen, (isOpen) => {
   border-top: 1px solid var(--ui-border);
 }
 
-/* Panel Transition */
 .panel-enter-active,
 .panel-leave-active {
   transition: opacity 0.2s ease;

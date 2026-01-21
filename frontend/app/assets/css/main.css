@@ -1,20 +1,14 @@
 @import "tailwindcss";
 @import "@nuxt/ui";
 
-/* ============================================
-   CRITICAL: Full-height app shell layout
-   The app MUST fill the entire viewport like NotebookLM.
-   Body/page must NOT scroll - only inner panels scroll.
-   ============================================ */
-
-html, body {
+html,
+body {
   height: 100%;
   margin: 0;
   padding: 0;
   overflow: hidden;
 }
 
-/* Nuxt's root div must also fill the viewport */
 #__nuxt {
   height: 100%;
   display: flex;

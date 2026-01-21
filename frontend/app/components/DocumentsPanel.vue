@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import type { Document } from '~/composables/useAppState';
-import { FLASHCARD_COUNT_MAX, FLASHCARD_COUNT_MIN } from '~/composables/useAppState';
+import type { Document } from '~/composables/useAppState'
+import { FLASHCARD_COUNT_MAX, FLASHCARD_COUNT_MIN } from '~/composables/useAppState'
 
 const {
   documents,
@@ -14,41 +14,37 @@ const {
   openFlashcardPanel,
   generateFlashcards,
   sessionId,
-  sessionLoadState,
+  sessionLoadState
 } = useAppState()
 
 const sessionFlashcards = ref<Record<string, any[]>>({})
+const fileInput = ref<HTMLInputElement | null>(null)
 
 const hasFlashcards = computed(() => {
-  const currentSessionId = sessionId.value
-  if (!currentSessionId) return false
-  return (sessionFlashcards.value[currentSessionId] || []).length > 0
+  if (!sessionId.value) return false
+  return (sessionFlashcards.value[sessionId.value] || []).length > 0
 })
 
 const currentFlashcardCount = computed(() => {
-  const id = sessionId.value
-  return id ? (sessionFlashcards.value[id]?.length || 0) : 0
+  return sessionId.value ? (sessionFlashcards.value[sessionId.value]?.length || 0) : 0
 })
 
 interface SessionResponse {
-  session_id: string;
-  created_at: string;
-  chunk_count: number;
+  session_id: string
+  created_at: string
+  chunk_count: number
   documents: Array<{
-    document_id: string;
-    filename: string;
-    chunks: number;
-  }>;
+    document_id: string
+    filename: string
+    chunks: number
+  }>
 }
 
-// Watch for session changes and fetch documents
 watch(() => sessionId.value, async (newSessionId, oldSessionId) => {
-  // Save previous session flashcards
   if (oldSessionId) {
     sessionFlashcards.value[oldSessionId] = [...flashcards.value]
   }
 
-  // CLEAR working buffer
   flashcards.value = []
 
   if (!newSessionId) {
@@ -58,40 +54,29 @@ watch(() => sessionId.value, async (newSessionId, oldSessionId) => {
   }
 
   try {
-    // Restore flashcards for this session
     if (sessionFlashcards.value[newSessionId]) {
       flashcards.value = [...sessionFlashcards.value[newSessionId]]
     }
     sessionLoadState.value = 'loading'
-    const response = await $fetch<SessionResponse>(
-      `/api/sessions/${newSessionId}`
-    )
+    const response = await $fetch<SessionResponse>(`/api/sessions/${newSessionId}`)
 
-    documents.value = []
-
-    response.documents.forEach(doc => {
-      documents.value.push({
-        file: new File([], doc.filename),
-        status: 'ingested',
-        chunksIngested: doc.chunks
-      })
-    })
+    documents.value = response.documents.map(doc => ({
+      file: new File([], doc.filename),
+      status: 'ingested' as const,
+      chunksIngested: doc.chunks
+    }))
     sessionLoadState.value = 'idle'
-  } catch (error) {
-    console.error('Failed to fetch documents for session:', error)
+  } catch (err) {
+    console.error('Failed to fetch session documents:', err)
     sessionLoadState.value = 'error'
   }
 })
 
 watch(flashcards, (newFlashcards) => {
-  const currentSessionId = sessionId.value
-  if (currentSessionId && newFlashcards.length > 0) {
-    sessionFlashcards.value[currentSessionId] = [...newFlashcards]
+  if (sessionId.value && newFlashcards.length > 0) {
+    sessionFlashcards.value[sessionId.value] = [...newFlashcards]
   }
 })
-
-
-const fileInput = ref<HTMLInputElement | null>(null)
 
 function triggerUpload() {
   fileInput.value?.click()
@@ -99,19 +84,13 @@ function triggerUpload() {
 
 async function handleFileChange(event: Event) {
   const target = event.target as HTMLInputElement
-  const files = target.files
-  if (files) {
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i]
-      if (file) {
-        addDocument(file)
-        // Auto-ingest supported files (PDF, TXT, MD)
-        const name = file.name.toLowerCase()
-        if (name.endsWith('.txt') || name.endsWith('.md') || name.endsWith('.pdf')) {
-          const index = documents.value.length - 1
-          await ingestDocument(index)
-        }
-      } 
+  if (!target.files) return
+
+  for (const file of target.files) {
+    addDocument(file)
+    const ext = file.name.toLowerCase()
+    if (ext.endsWith('.txt') || ext.endsWith('.md') || ext.endsWith('.pdf')) {
+      await ingestDocument(documents.value.length - 1)
     }
   }
   if (fileInput.value) fileInput.value.value = ''
@@ -121,34 +100,27 @@ function getFileIcon(doc: Document): string {
   const name = doc.file.name.toLowerCase()
   if (name.endsWith('.pdf')) return 'i-lucide-file-text'
   if (name.endsWith('.md')) return 'i-lucide-file-code'
-  if (name.endsWith('.txt')) return 'i-lucide-file'
   return 'i-lucide-file'
 }
 
 function getStatusIcon(doc: Document): string | null {
-  switch (doc.status) {
-    case 'ingesting': return 'i-lucide-loader-2'
-    case 'ingested': return 'i-lucide-check-circle'
-    case 'error': return 'i-lucide-alert-circle'
-    default: return null
+  const icons: Record<string, string> = {
+    ingesting: 'i-lucide-loader-2',
+    ingested: 'i-lucide-check-circle',
+    error: 'i-lucide-alert-circle'
   }
+  return icons[doc.status] || null
 }
 
 function getStatusClass(doc: Document): string {
-  switch (doc.status) {
-    case 'ingesting': return 'status-ingesting'
-    case 'ingested': return 'status-ingested'
-    case 'error': return 'status-error'
-    default: return 'status-pending'
-  }
+  return `status-${doc.status}`
 }
 
 function formatSize(bytes: number): string {
-  if (bytes < 1024) return bytes + ' B'
-  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'
-  return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
-
 </script>
 
 <template>
@@ -287,7 +259,6 @@ function formatSize(bytes: number): string {
   flex-direction: column;
   background-color: var(--ui-bg-muted);
   border-right: 1px solid var(--ui-border);
-  /* CRITICAL: min-height: 0 allows flex child to shrink and enable scrolling */
   min-height: 0;
 }
 
@@ -368,7 +339,6 @@ function formatSize(bytes: number): string {
   flex: 1;
   overflow-y: auto;
   padding: 8px;
-  /* CRITICAL: min-height: 0 enables scrolling in flex child */
   min-height: 0;
 }
 
@@ -440,7 +410,6 @@ function formatSize(bytes: number): string {
   opacity: 0.7;
 }
 
-/* Status indicator styles */
 .status-icon {
   font-size: 16px;
   flex-shrink: 0;

@@ -69,6 +69,7 @@ function parseFlashcardsResponse(backendResponse: BackendFlashcardsResponse): {
 }
 
 export default defineEventHandler(async (event) => {
+    const config = useRuntimeConfig()
     const body = await readBody(event)
     const { sessionId, topic, count } = body
 
@@ -89,7 +90,7 @@ export default defineEventHandler(async (event) => {
     try {
         // Call Flask backend session-based flashcard endpoint
         const backendResponse = await $fetch<BackendFlashcardsResponse>(
-            `http://localhost:5000/api/sessions/${sessionId}/flashcards`,
+            `${config.backendApiUrl}/api/sessions/${sessionId}/flashcards`,
             {
                 method: 'POST',
                 headers: {
@@ -102,6 +103,7 @@ export default defineEventHandler(async (event) => {
             }
         )
 
+        console.log(backendResponse)
         const parsed = parseFlashcardsResponse(backendResponse)
 
         return {

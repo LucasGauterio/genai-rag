@@ -35,6 +35,21 @@ Make sure to install the dependencies:
 pnpm install
 ```
 
+### Environment Configuration
+
+Create a `.env` file in the frontend directory with the following:
+
+```env
+# Backend API URL
+NUXT_BACKEND_API_URL=http://localhost:5000
+```
+
+You can copy `.env.example` as a starting point:
+
+```bash
+cp .env.example .env
+```
+
 ## Development Server
 
 Start the development server on `http://localhost:3000`:
