@@ -17,7 +17,7 @@ from .structured_output import ConceptList
 
 import sys
 from pathlib import Path
-from config import LLM_MODEL, LLM_TEMPERATURE, GOOGLE_API_KEY
+from config import LLM_MODEL, LLM_TEMPERATURE
 
 
 class ExtractorChain:
@@ -37,7 +37,7 @@ class ExtractorChain:
             temperature: Generation temperature
         """
         self.model = get_llm(
-            model_name=model_name,
+            model_name=LLM_MODEL,
             temperature=temperature,
         )
         

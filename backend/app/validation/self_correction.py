@@ -18,7 +18,7 @@ from llm.factory import get_llm
 import sys
 from pathlib import Path
 # Fix imports for backend
-from config import LLM_MODEL, LLM_TEMPERATURE, GOOGLE_API_KEY
+from config import LLM_MODEL, LLM_TEMPERATURE
 # Default MIN_CONFIDENCE_SCORE since it was in config.py of flashcard_generator
 MIN_CONFIDENCE_SCORE = 3.5 
 
@@ -142,9 +142,8 @@ class CritiqueChain:
             temperature: Generation temperature (lower for more consistent evaluation)
         """
         self.model = get_llm(
-            model_name=model_name,
+            model_name=LLM_MODEL,
             temperature=temperature if temperature is not None else 0.1,  # Low temp for evaluation
-            google_api_key=GOOGLE_API_KEY
         )
         
         self.prompt = ChatPromptTemplate.from_template(CRITIQUE_PROMPT)
@@ -211,7 +210,7 @@ def critique_flashcard(
     Returns:
         CritiqueResult
     """
-    chain = CritiqueChain(model_name=model_name)
+    chain = CritiqueChain(model_name=LLM_MODEL)
     return chain.critique(flashcard, source_context)
 
 
@@ -240,7 +239,7 @@ def validate_and_correct_cards(
         Tuple of (validated FlashcardSet, statistics dict)
     """
     min_score = min_score or MIN_CONFIDENCE_SCORE
-    chain = CritiqueChain(model_name=model_name)
+    chain = CritiqueChain(model_name=LLM_MODEL)
     
     accepted_cards = []
     statistics = {
