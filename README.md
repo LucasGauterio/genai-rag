@@ -6,7 +6,7 @@ This project allows users to generate flashcards from uploaded documents using a
 
 Before starting, ensure you have the following installed:
 -   [Docker Desktop](https://www.docker.com/products/docker-desktop/) (for local embeddings/vector DB)
--   [Python 3.8+](https://www.python.org/downloads/)
+-   [Python 3.10+](https://www.python.org/downloads/)
 -   [Node.js](https://nodejs.org/) (Latest LTS recommended)
 -   [pnpm](https://pnpm.io/installation) (Recommended package manager)
 
