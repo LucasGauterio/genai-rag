@@ -11,9 +11,7 @@ from llm.factory import get_llm
 
 from .prompts import TRANSFORMATION_PROMPT
 
-import sys
-from pathlib import Path
-# Fix imports for backend
+
 from config import LLM_MODEL, LLM_TEMPERATURE
 from .structured_output import ConceptList, Flashcard, FlashcardSet
 

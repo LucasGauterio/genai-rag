@@ -8,6 +8,13 @@ from flask import Blueprint, request, jsonify
 from rag.session_store import get_session_store
 from utils.prompts import build_context_with_citations
 
+from generation.service import generate_chat_answer
+
+
+from config import MAX_FLASHCARDS
+from generation import ExtractorChain
+from generation import TransformationChain
+
 
 generation_bp = Blueprint("generation", __name__)
 
@@ -34,7 +41,6 @@ def chat_in_session(session_id: str):
         return jsonify({"error": "Missing question"}), 400
     
     try:
-        from generation.service import generate_chat_answer
         result = generate_chat_answer(
             session_id=session_id,
             question=question,
@@ -42,12 +48,7 @@ def chat_in_session(session_id: str):
             document_id=document_id,
             mode=mode
         )
-        
-        # Filter out 'retrieved_chunks' from API response if not needed, 
-        # or leave it. The original didn't return chunks, but it returned 'chunks_used'.
-        # The service returns 'retrieved_chunks'.
-        # I'll construct the response to match the original API contract exactly.
-        
+
         response = {
             "answer": result["answer"],
             "citations": result["citations"],
@@ -114,19 +115,15 @@ def generate_flashcards(session_id: str):
         context, citations = build_context_with_citations(chunks)
         
         # 2. Extract concepts
-        # We pass the formatted context string directly to preserve [1] markers
-        from generation import ExtractorChain
         extractor = ExtractorChain()
         extracted = extractor.extract(context)
 
-        from config import MAX_FLASHCARDS
         # Limit the extracted concepts to the requested count or MAX_FLASHCARDS
         limit = min(count, MAX_FLASHCARDS)
         if len(extracted.concepts) > limit:
             extracted.concepts = random.sample(extracted.concepts, limit)
         
         # 3. Transform to flashcards
-        from generation import TransformationChain
         transformer = TransformationChain()
         card_set = transformer.transform(extracted)
         

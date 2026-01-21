@@ -15,8 +15,7 @@ from llm.factory import get_llm
 from .prompts import EXTRACTION_PROMPT
 from .structured_output import ConceptList
 
-import sys
-from pathlib import Path
+
 from config import LLM_MODEL, LLM_TEMPERATURE
 
 
