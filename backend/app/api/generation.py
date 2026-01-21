@@ -1,7 +1,3 @@
-"""
-Generation API - Chat and flashcard generation.
-"""
-
 import random
 from flask import Blueprint, request, jsonify
 
@@ -21,10 +17,6 @@ generation_bp = Blueprint("generation", __name__)
 
 @generation_bp.route("/sessions/<session_id>/chat", methods=["POST"])
 def chat_in_session(session_id: str):
-    """
-    Chat within a session, retrieving only from that session's documents.
-    Delegates to shared service in generation.service.
-    """
     store = get_session_store()
     
     session = store.get_session(session_id)
@@ -62,24 +54,6 @@ def chat_in_session(session_id: str):
 
 @generation_bp.route("/sessions/<session_id>/flashcards", methods=["POST"])
 def generate_flashcards(session_id: str):
-    """
-    Generate flashcards from session documents using advanced pipeline.
-    
-    Request:
-        {
-            "topic": "attention mechanism",
-            "document_id": "optional - filter to specific doc",
-            "count": 10,
-            "validate": true (default)
-        }
-    
-    Returns:
-        {
-            "flashcards": [{ "question", "answer", "citation", "tag" }],
-            "citations": { ... },
-            "stats": { ... }
-        }
-    """
     store = get_session_store()
     
     session = store.get_session(session_id)

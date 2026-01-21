@@ -1,20 +1,8 @@
-"""
-PDF text extraction utilities.
-"""
-
 import io
 
 
 def extract_pdf_text(file) -> list[dict]:
-    """
-    Extract text from a PDF file, preserving page numbers.
-    
-    Args:
-        file: File object (from Flask request.files)
-    
-    Returns:
-        List of dicts: [{ "page_number": int, "text": str }]
-    """
+
     try:
         from pypdf import PdfReader
     except ImportError:

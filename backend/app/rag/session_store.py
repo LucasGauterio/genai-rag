@@ -1,10 +1,3 @@
-"""
-Session-based ChromaDB collection management.
-
-Each chat session gets its own ChromaDB collection.
-When the session is closed, the collection is deleted.
-"""
-
 import chromadb
 from chromadb.config import Settings
 from typing import Optional, Dict, List
@@ -17,24 +10,11 @@ from rag.hybrid_search import hybrid_search
 
 
 class SessionStore:
-    """
-    Manages ChromaDB collections per session.
-    
-    Architecture:
-    - Each session = one ChromaDB collection
-    - Collection name: "session_{session_id}"
-    - Documents are isolated per session
-    - Cleanup: delete collection when session closes
-    """
-    
     def __init__(self):
         self.client = chromadb.Client()
         self._sessions: Dict[str, dict] = {}
     
-    # --- Session CRUD ---
-    
     def create_session(self) -> dict:
-        """Create a new session with its own collection."""
         session_id = str(uuid.uuid4())[:8]
         collection_name = f"session_{session_id}"
         collection = self.client.create_collection(
@@ -56,9 +36,7 @@ class SessionStore:
         }
     
     def get_session(self, session_id: str) -> Optional[dict]:
-        """Get session info."""
         if session_id not in self._sessions:
-            # if not self._recover_session(session_id):
             return None
         
         session = self._sessions.get(session_id)
@@ -73,7 +51,6 @@ class SessionStore:
         }
     
     def delete_session(self, session_id: str) -> bool:
-        """Delete a session and its collection."""
         try:
             self.client.delete_collection(f"session_{session_id}")
             self._sessions.pop(session_id, None)
@@ -82,7 +59,6 @@ class SessionStore:
             return False
     
     def list_sessions(self) -> List[dict]:
-        """List all active sessions."""
         collections = self.client.list_collections()
         return [
             {
@@ -94,8 +70,6 @@ class SessionStore:
             for col in collections
             if col.name.startswith("session_")
         ]
-    
-    # --- Document Operations ---
     
     def add_documents(
         self,
@@ -111,10 +85,8 @@ class SessionStore:
         
         collection = session["collection"]
         bm25 = session["bm25"]
-        # Prepare data
         ids, texts, metadatas = [], [], []
         for doc in documents:
-            # Skip empty chunks to prevent "empty embedding" errors
             if not doc.page_content or not doc.page_content.strip():
                 continue
 
@@ -123,7 +95,6 @@ class SessionStore:
             texts.append(doc.page_content)
             metadatas.append({**doc.metadata, "session_id": session_id})
        
-        # Store in ChromaDB
         embeddings = [embed_text(t) for t in texts]
         collection.add(
             ids=ids,
@@ -132,13 +103,11 @@ class SessionStore:
             metadatas=metadatas,
         )
         
-        # Store in BM25
         bm25.add_documents([
             {"text": t, "metadata": m}
             for t, m in zip(texts, metadatas)
         ])
         
-        # Track document
         session["documents"].append({
             "document_id": document_id,
             "filename": filename,
@@ -171,26 +140,6 @@ class SessionStore:
             document_id=document_id,
         )
     
-    # --- Private Helpers ---
-    
-    # def _recover_session(self, session_id: str) -> bool:
-    #     """Try to recover session from persistent storage."""
-    #     try:
-    #         collection = self.client.get_collection(f"session_{session_id}")
-    #         self.client._get_collection(f"session_{session_id}")
-    #         self._sessions[session_id] = {
-    #             "collection": collection,
-    #             "bm25": BM25Retriever(),
-    #             "created_at": collection.metadata.get("created_at", "unknown"),
-    #             "documents": [],
-    #         }
-    #         return True
-    #     except Exception:
-    #         return False
-
-
-# --- Global Instance ---
-
 _session_store: Optional[SessionStore] = None
 
 
