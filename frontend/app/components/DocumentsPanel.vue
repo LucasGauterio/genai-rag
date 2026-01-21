@@ -110,7 +110,6 @@ async function handleFileChange(event: Event) {
         if (name.endsWith('.txt') || name.endsWith('.md') || name.endsWith('.pdf')) {
           const index = documents.value.length - 1
           await ingestDocument(index)
-          documents.value[index]!.status = 'ingested'
         }
       } 
     }

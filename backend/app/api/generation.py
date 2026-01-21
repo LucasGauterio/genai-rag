@@ -2,6 +2,7 @@
 Generation API - Chat and flashcard generation.
 """
 
+import random
 from flask import Blueprint, request, jsonify
 
 from rag.session_store import get_session_store
@@ -117,6 +118,12 @@ def generate_flashcards(session_id: str):
         from generation import ExtractorChain
         extractor = ExtractorChain()
         extracted = extractor.extract(context)
+
+        from config import MAX_FLASHCARDS
+        # Limit the extracted concepts to the requested count or MAX_FLASHCARDS
+        limit = min(count, MAX_FLASHCARDS)
+        if len(extracted.concepts) > limit:
+            extracted.concepts = random.sample(extracted.concepts, limit)
         
         # 3. Transform to flashcards
         from generation import TransformationChain

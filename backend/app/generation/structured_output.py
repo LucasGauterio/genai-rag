@@ -11,7 +11,7 @@ from typing import List, Literal, Optional
 from pydantic import BaseModel, Field, field_validator
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
-from langchain_google_genai import ChatGoogleGenerativeAI
+from llm.factory import get_llm
 
 from .prompts import STRUCTURED_OUTPUT_PROMPT
 
@@ -155,8 +155,8 @@ def fix_json_with_llm(broken_json: str) -> str:
     Returns:
         Fixed JSON string
     """
-    model = ChatGoogleGenerativeAI(
-        model=LLM_MODEL,
+    model = get_llm(
+        model_name=LLM_MODEL,
         temperature=0,  # Zero temperature for deterministic fixing
     )
     
