@@ -14,7 +14,7 @@ from .prompts import TRANSFORMATION_PROMPT
 import sys
 from pathlib import Path
 # Fix imports for backend
-from config import LLM_MODEL, LLM_TEMPERATURE, GOOGLE_API_KEY
+from config import LLM_MODEL, LLM_TEMPERATURE
 from .structured_output import ConceptList, Flashcard, FlashcardSet
 
 
@@ -35,7 +35,7 @@ class TransformationChain:
             temperature: Generation temperature
         """
         self.model = get_llm(
-            model_name=model_name,
+            model_name=LLM_MODEL,
             temperature=temperature,
         )
         
