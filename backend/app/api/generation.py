@@ -6,11 +6,7 @@ import random
 from flask import Blueprint, request, jsonify
 
 from rag.session_store import get_session_store
-from llm import call_openrouter
-from utils.prompts import (
-    build_context_with_citations,
-    build_chat_prompt,
-)
+from utils.prompts import build_context_with_citations
 
 
 generation_bp = Blueprint("generation", __name__)
@@ -20,20 +16,7 @@ generation_bp = Blueprint("generation", __name__)
 def chat_in_session(session_id: str):
     """
     Chat within a session, retrieving only from that session's documents.
-    
-    Request:
-        {
-            "question": "What is attention?",
-            "mode": "chat" | "flashcards" | "summary",
-            "document_id": "optional - filter to specific doc",
-            "k": 5
-        }
-    
-    Returns:
-        {
-            "answer": "Attention is... [1]",
-            "citations": { "[1]": { page, source, text, citation_id } }
-        }
+    Delegates to shared service in generation.service.
     """
     store = get_session_store()
     
@@ -51,32 +34,26 @@ def chat_in_session(session_id: str):
         return jsonify({"error": "Missing question"}), 400
     
     try:
-        # Retrieve from session
-        chunks = store.search(
+        from generation.service import generate_chat_answer
+        result = generate_chat_answer(
             session_id=session_id,
-            query=question,
+            question=question,
             k=k,
             document_id=document_id,
+            mode=mode
         )
         
-        if not chunks:
-            return jsonify({
-                "answer": "I couldn't find relevant information in the uploaded documents.",
-                "citations": {}
-            })
+        # Filter out 'retrieved_chunks' from API response if not needed, 
+        # or leave it. The original didn't return chunks, but it returned 'chunks_used'.
+        # The service returns 'retrieved_chunks'.
+        # I'll construct the response to match the original API contract exactly.
         
-        # Build context and prompt
-        context, citations = build_context_with_citations(chunks)
-        prompt = build_chat_prompt(context, question, mode)
-        
-        # Generate response
-        answer = call_openrouter(prompt)
-        
-        return jsonify({
-            "answer": answer,
-            "citations": citations,
-            "chunks_used": len(chunks),
-        })
+        response = {
+            "answer": result["answer"],
+            "citations": result["citations"],
+            "chunks_used": result["chunks_used"]
+        }
+        return jsonify(response)
     
     except Exception as e:
         return jsonify({"error": str(e)}), 500

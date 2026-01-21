@@ -1,0 +1,228 @@
+{
+    "queries": [
+        {
+            "id": "q01",
+            "query": "What are the two main architectures for biometric matching in smart cards?",
+            "type": "chat",
+            "document": "paper1.pdf",
+            "relevant_pages": [
+                6
+            ],
+            "relevant_text_snippets": [
+                "Match-on-Card (MoC): Biometric matching is performed entirely on the card's chip, and the template never leaves the card. This ensures maximum privacy.",
+                "Match-off-Card: The biometric is matched externally, with the template read from the card. This mode is more flexible but less private."
+            ],
+            "expected_keywords": [
+                "Match-on-Card",
+                "MoC",
+                "Match-off-Card",
+                "biometric matching",
+                "smart card",
+                "template",
+                "privacy"
+            ]
+        },
+        {
+            "id": "q02",
+            "query": "What is the Equal Error Rate (EER) in biometric authentication systems?",
+            "type": "chat",
+            "document": "paper1.pdf",
+            "relevant_pages": [
+                11,
+                12
+            ],
+            "relevant_text_snippets": [
+                "Equal Error Rate (EER): The rate at which FAR and FRR are equal, often used as a single scalar indicator of performance. Lower EER implies a more accurate system."
+            ],
+            "expected_keywords": [
+                "Equal Error Rate",
+                "EER",
+                "FAR",
+                "FRR",
+                "performance",
+                "accuracy",
+                "biometric"
+            ]
+        },
+        {
+            "id": "q03",
+            "query": "What are the four specialized detection modules in the proposed sarcasm detection system?",
+            "type": "chat",
+            "document": "paper2.pdf",
+            "relevant_pages": [
+                2
+            ],
+            "relevant_text_snippets": [
+                "The proposed sarcasm detection system is designed using a modular architecture composed of four specialized detection modules that collaboratively interpret different linguistic signals. These include:",
+                "Sentiment Analysis: This module employs VADER or BERT-based sentiment analysis models to capture the emotional polarity of a sentence. Sarcasm often involves polarity flips—where positive sentiment is ex pressed with a negative undertone or vice versa. VADER, with its rule-based sentiment scoring, excels in social media text, while BERT captures deeper contextual sentiment shifts.",
+                "Contextual Embedding: Powered by BERT, this module encodes the input sentence into high-dimensional vectors that reflect contextual meaning. Unlike traditional embeddings (e.g., Word2Vec), BERT dynamically adjusts word meanings based on their sentence context, which is crucial in understanding nuanced sarcasm.",
+                "Linguistic Features: This component utilizes SpaCy and custom NLP rules to extract syntactic and semantic cues such as punctuation usage, exaggerated expressions, all caps, and interjections (e.g., ”Yeah, right!”)",
+                "Emotion Detection: A CNN/LSTM hybrid model is used to detect underlying emotional tone such as frustration, amusement, or confusion [8]. These emotions, when mismatched with surface sentiment, often signal sarcastic intent."
+            ],
+            "expected_keywords": [
+                "Sentiment Analysis",
+                "Contextual Embedding",
+                "Linguistic Features",
+                "Emotion Detection",
+                "BERT",
+                "VADER",
+                "modular"
+            ]
+        },
+        {
+            "id": "q04",
+            "query": "What accuracy did the multimodal BERT and DenseNet fusion model achieve in the sarcasm detection case study?",
+            "type": "chat",
+            "document": "paper2.pdf",
+            "relevant_pages": [
+                3,
+                4
+            ],
+            "relevant_text_snippets": [
+                "The results demonstrate clear advantages of multimodal learning. BERT alone achieved an accuracy of 88.6%, DenseNet alone achieved 74.3%, and the combined model reached 93.2%."
+            ],
+            "expected_keywords": [
+                "93.2%",
+                "88.6%",
+                "74.3%",
+                "BERT",
+                "DenseNet",
+                "multimodal",
+                "fusion",
+                "accuracy"
+            ]
+        },
+        {
+            "id": "q05",
+            "query": "What types of adversarial attacks threaten deep learning-based biometric systems?",
+            "type": "chat",
+            "document": "paper1.pdf",
+            "relevant_pages": [
+                9
+            ],
+            "relevant_text_snippets": [
+                "Adversarial Attacks: Subtle perturbations in input images can cause CNNs to misclassify identities. Physical-world attacks (e.g., adversarial glasses, printed patches) have been experimentally shown to deceive face recognition systems.",
+                "Deepfakes: AI-based synthesis of faces or voices can impersonate real users."
+            ],
+            "expected_keywords": [
+                "adversarial attacks",
+                "perturbations",
+                "CNNs",
+                "deepfakes",
+                "face recognition",
+                "spoofing",
+                "physical-world attacks"
+            ]
+        },
+        {
+            "id": "q06",
+            "query": "What is the definition of a Convolutional Neural Network (CNN)?",
+            "type": "chat",
+            "document": "paper2.pdf",
+            "relevant_pages": [
+                2
+            ],
+            "relevant_text_snippets": [
+                "CNNs are specialized neural networks designed to process data with grid-like topology, such as images or text matrices. They use convolutional layers to detect patterns like edges or textual features, followed by pooling layers to reduce dimensionality."
+            ],
+            "expected_keywords": [
+                "CNN",
+                "Convolutional Neural Network",
+                "convolutional layers",
+                "pooling layers",
+                "patterns",
+                "dimensionality"
+            ]
+        },
+        {
+            "id": "q07",
+            "query": "Can you summarize the distributional hypothesis and its key observations?",
+            "type": "chat",
+            "document": "lecture1.pdf",
+            "relevant_pages": [
+                5,
+                6,
+                7
+            ],
+            "relevant_text_snippets": [
+                "Observation: synonyms tend to occur in the same environment",
+                "The distribution of an element will be understood as the sum of all its environments (contexts). An environment of an element A is an existing array of its co-occurrents, i.e. the other elements, each in a particular position, with which A occurs to yield an utterance.",
+                "Words that are synonyms occur in the same environment",
+                "Words occurring in similar contexts (environment) tend to have similar meanings",
+                "Difference in similarity between those two terms correlates with the difference in their environments."
+            ],
+            "expected_keywords": [
+                "distributional hypothesis",
+                "synonyms",
+                "environment",
+                "context",
+                "similar meanings",
+                "co-occurrents"
+            ]
+        },
+        {
+            "id": "q08",
+            "query": "Summarize how Word2Vec Skip-Gram learns word embeddings",
+            "type": "chat",
+            "document": "lecture1.pdf",
+            "relevant_pages": [
+                38,
+                42,
+                43,
+                45
+            ],
+            "relevant_text_snippets": [
+                "\"skip-gram with negative sampling\" (SGNS)",
+                "1. Treat the target word and a neighbouring context word as positive examples.",
+                "2. Randomly sample other words in the lexicon to get negative samples",
+                "3. Use logistic regression to train a classifier to distinguish those two cases",
+                "4. Use the weights of the trained model as the embeddings",
+                "Start with V random 300-dimensional vectors as initial embeddings",
+                "Select positive / negative training data",
+                "Use logistic regression",
+                "Adjust weights by making positive pairs closer to each other (i.e. positive classification)",
+                "Throw away the classifier code and keep the embeddings (regression weights!)"
+            ],
+            "expected_keywords": [
+                "skip-gram",
+                "negative sampling",
+                "positive examples",
+                "negative samples",
+                "logistic regression",
+                "embeddings",
+                "classifier",
+                "weights"
+            ]
+        },
+        {
+            "id": "q_neg_01",
+            "query": "What is quantum entanglement and how does it enable quantum computing?",
+            "type": "chat",
+            "document": null,
+            "relevant_pages": [],
+            "relevant_text_snippets": [],
+            "expected_keywords": [],
+            "expected_behavior": "should_refuse"
+        },
+        {
+            "id": "q_neg_02",
+            "query": "Explain the recipe for making sourdough bread from scratch",
+            "type": "chat",
+            "document": null,
+            "relevant_pages": [],
+            "relevant_text_snippets": [],
+            "expected_keywords": [],
+            "expected_behavior": "should_refuse"
+        },
+        {
+            "id": "q_neg_03",
+            "query": "How do black holes form and what happens at the event horizon?",
+            "type": "chat",
+            "document": null,
+            "relevant_pages": [],
+            "relevant_text_snippets": [],
+            "expected_keywords": [],
+            "expected_behavior": "should_refuse"
+        }
+    ]
+}
