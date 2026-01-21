@@ -1,4 +1,5 @@
 export default defineEventHandler(async (event) => {
+    const config = useRuntimeConfig()
     const body = await readBody(event)
     const { prompt, sessionId } = body
 
@@ -22,7 +23,7 @@ export default defineEventHandler(async (event) => {
             answer: string
             citations: Record<string, unknown>
             chunks_used?: number
-        }>(`http://localhost:5000/api/sessions/${sessionId}/chat`, {
+        }>(`${config.backendApiUrl}/api/sessions/${sessionId}/chat`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'

@@ -12,6 +12,8 @@ Before starting, ensure you have the following installed:
 
 ## Configuration
 
+### Backend Configuration
+
 1.  Create a `.env` file in the root directory.
 2.  Add the following environment variables:
 
@@ -23,6 +25,23 @@ Before starting, ensure you have the following installed:
     # Local Embeddings (Ollama)
     OLLAMA_BASE_URL=http://localhost:11434
     OLLAMA_EMBEDDING_MODEL=nomic-embed-text
+    ```
+
+### Frontend Configuration
+
+1.  Create a `.env` file in the `frontend` directory.
+2.  Add the following environment variable:
+
+    ```env
+    # Backend API URL
+    NUXT_BACKEND_API_URL=http://localhost:5000
+    ```
+
+    You can copy `.env.example` as a starting point:
+    
+    ```bash
+    cd frontend
+    cp .env.example .env
     ```
 
 ## Installation & Running

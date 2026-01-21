@@ -9,6 +9,11 @@ export default defineNuxtConfig({
     enabled: true
   },
 
+  runtimeConfig: {
+    // Server-only runtime config
+    backendApiUrl: process.env.NUXT_BACKEND_API_URL
+  },
+
   css: ['~/assets/css/main.css'],
 
   // Ensure the server directory is found
@@ -26,23 +31,19 @@ export default defineNuxtConfig({
   nitro: {
     devProxy: {
       '/api/sessions': {
-        target: 'http://localhost:5000/api/sessions',
+        target: `${process.env.NUXT_BACKEND_API_URL}/api/sessions`,
         changeOrigin: true
       },
       '/api/chat': {
-        target: 'http://127.0.0.1:5000/api/chat',
+        target: `${process.env.NUXT_BACKEND_API_URL}/api/chat`,
         changeOrigin: true
       },
       '/api/ingest': {
-        target: 'http://127.0.0.1:5000/api/ingest',
+        target: `${process.env.NUXT_BACKEND_API_URL}/api/ingest`,
         changeOrigin: true
       },
-      // '/api/sessions/': {
-      //   target: 'http://localhost:5000/api/sessions/',
-      //   changeOrigin: true
-      // },
       '/api/ingest-file': {
-        target: 'http://127.0.0.1:5000/api/ingest-file',
+        target: `${process.env.NUXT_BACKEND_API_URL}/api/ingest-file`,
         changeOrigin: true
       }
     }
