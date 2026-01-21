@@ -107,63 +107,7 @@ Output only valid JSON:
 """
 
 
-# =============================================================================
-# STEP 3: STRUCTURED OUTPUT VALIDATION PROMPT
-# =============================================================================
-
-STRUCTURED_OUTPUT_PROMPT = """You are a JSON Formatter ensuring strict schema compliance for flashcard output.
-
-## Required Schema
-
-```json
-{{
-  "cards": [
-    {{
-      "question": "string (non-empty, minimum 10 characters)",
-      "answer": "string (non-empty, minimum 10 characters)", 
-      "citation": "string (optional, e.g. '[1]')",
-      "tag": "string (must be one of: definition, concept, procedure, comparison, application)"
-    }}
-  ]
-}}
-```
-
-## Validation Rules
-
-1. The output MUST be a valid JSON object
-2. The "cards" array MUST contain at least one card
-3. Every card MUST have: question, answer, tag. Citation is optional but recommended.
-4. Tags MUST be exactly one of: definition, concept, procedure, comparison, application
-5. Questions and answers MUST be at least 10 characters long
-6. Remove any cards with empty or invalid fields
-7. Fix any JSON syntax errors (missing quotes, commas, etc.)
-8. Escape special characters properly (quotes, backslashes)
-9. Remove any markdown formatting or code block markers
-
-## Input Content to Validate
-
-{raw_cards}
-
-## Output
-
-Return ONLY the corrected, validated JSON object with no additional text:
-"""
 
 
-# =============================================================================
-# HELPER FUNCTIONS
-# =============================================================================
-
-def get_extraction_prompt() -> str:
-    """Return the extraction prompt template."""
-    return EXTRACTION_PROMPT
 
 
-def get_transformation_prompt() -> str:
-    """Return the transformation prompt template."""
-    return TRANSFORMATION_PROMPT
-
-
-def get_structured_output_prompt() -> str:
-    """Return the structured output validation prompt template."""
-    return STRUCTURED_OUTPUT_PROMPT

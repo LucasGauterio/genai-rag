@@ -2,23 +2,13 @@
 Structured Output - Step 3 of the generation flow.
 
 Enforces strict JSON schema compliance using Pydantic models.
-Handles validation, cleaning, and error correction.
 """
 
-import json
-import re
 from typing import List, Literal, Optional
 from pydantic import BaseModel, Field, field_validator
-from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.output_parsers import StrOutputParser
-from llm.factory import get_llm
-
-from .prompts import STRUCTURED_OUTPUT_PROMPT
-
-import sys
-from pathlib import Path
-# Fix imports to use backend config
-from config import LLM_MODEL, LLM_TEMPERATURE, VALID_TAGS
+from config import VALID_TAGS
+import re
+import json
 
 
 # =============================================================================
@@ -77,140 +67,3 @@ class FlashcardSet(BaseModel):
         """Convert to JSON string."""
         return json.dumps(self.to_dict(), indent=indent)
 
-
-# =============================================================================
-# VALIDATION AND CLEANING
-# =============================================================================
-
-def extract_json_from_text(text: str) -> str:
-    """
-    Extract JSON from text that may contain markdown or other content.
-    
-    Args:
-        text: Raw text that may contain JSON
-        
-    Returns:
-        Extracted JSON string
-    """
-    # Try to find JSON in code blocks
-    code_block_match = re.search(r'```(?:json)?\s*(\{.*?\})\s*```', text, re.DOTALL)
-    if code_block_match:
-        return code_block_match.group(1)
-    
-    # Try to find raw JSON object
-    json_match = re.search(r'\{[^{}]*"cards"[^{}]*\[.*?\]\s*\}', text, re.DOTALL)
-    if json_match:
-        return json_match.group(0)
-    
-    # Last resort: find anything that looks like JSON
-    brace_match = re.search(r'\{.*\}', text, re.DOTALL)
-    if brace_match:
-        return brace_match.group(0)
-    
-    return text
-
-
-def validate_flashcards(raw_output: str, use_llm_fix: bool = True) -> FlashcardSet:
-    """
-    Validate and parse flashcard output, attempting repairs if needed.
-    
-    Args:
-        raw_output: Raw JSON string from transformation step
-        use_llm_fix: Whether to use LLM to fix invalid JSON
-        
-    Returns:
-        Validated FlashcardSet
-        
-    Raises:
-        ValueError: If validation fails after all attempts
-    """
-    # Step 1: Extract JSON from potential wrapper text
-    json_str = extract_json_from_text(raw_output)
-    
-    # Step 2: Try direct parsing
-    try:
-        data = json.loads(json_str)
-        return FlashcardSet(**data)
-    except (json.JSONDecodeError, Exception) as e:
-        if not use_llm_fix:
-            raise ValueError(f"JSON parsing failed: {e}")
-    
-    # Step 3: Use LLM to fix the JSON
-    fixed_json = fix_json_with_llm(raw_output)
-    
-    try:
-        data = json.loads(extract_json_from_text(fixed_json))
-        return FlashcardSet(**data)
-    except Exception as e:
-        raise ValueError(f"Validation failed after LLM fix attempt: {e}")
-
-
-def fix_json_with_llm(broken_json: str) -> str:
-    """
-    Use LLM to fix malformed JSON.
-    
-    Args:
-        broken_json: Malformed JSON string
-        
-    Returns:
-        Fixed JSON string
-    """
-    model = get_llm(
-        model_name=LLM_MODEL,
-        temperature=0,  # Zero temperature for deterministic fixing
-    )
-    
-    prompt = ChatPromptTemplate.from_template(STRUCTURED_OUTPUT_PROMPT)
-    chain = prompt | model | StrOutputParser()
-    
-    return chain.invoke({"raw_cards": broken_json})
-
-
-def filter_valid_cards(card_set: FlashcardSet) -> FlashcardSet:
-    """
-    Filter out cards that don't meet quality thresholds.
-    
-    Args:
-        card_set: Validated FlashcardSet
-        
-    Returns:
-        Filtered FlashcardSet with only high-quality cards
-    """
-    valid_cards = []
-    
-    for card in card_set.cards:
-        # Check minimum length requirements
-        if len(card.question) >= 10 and len(card.answer) >= 10:
-            # Check tag is valid
-            if card.tag in VALID_TAGS:
-                valid_cards.append(card)
-    
-    if not valid_cards:
-        # Don't fail if filtering removes everything, just return empty? 
-        # Or raise error as before. Original raised error.
-        raise ValueError("No valid cards remain after filtering")
-    
-    return FlashcardSet(cards=valid_cards)
-
-
-# =============================================================================
-# FULL PIPELINE
-# =============================================================================
-
-def process_to_structured_output(raw_cards: str) -> FlashcardSet:
-    """
-    Full structured output pipeline.
-    
-    Args:
-        raw_cards: Raw output from transformation step
-        
-    Returns:
-        Validated and filtered FlashcardSet
-    """
-    # Validate and parse
-    card_set = validate_flashcards(raw_cards)
-    
-    # Apply quality filtering
-    filtered_set = filter_valid_cards(card_set)
-    
-    return filtered_set
