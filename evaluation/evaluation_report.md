@@ -1,6 +1,6 @@
 # RAG System Evaluation Report
 
-**Generated:** 2026-01-20 21:59:36
+**Generated:** 2026-01-21 14:58:54
 
 ---
 
@@ -17,8 +17,10 @@
 |--------|-------|
 | **Avg Recall@K** | 86.5% |
 | **Avg MRR** | 79.2% |
-| **Avg Keyword Recall** | 85.0% |
-| **Avg Latency** | 5484 ms |
+| **Avg Keyword Recall** | 89.9% |
+| **Avg Latency** | 6351 ms |
+
+**Note on Precision:** This evaluation ingests multiple documents into a single session to test cross-document retrieval. Lower precision scores (20-60%) are expected because the retrieval system returns chunks from all documents, not just the one relevant to each query. In typical production use with fewer documents per session, precision would be higher.
 
 ---
 
@@ -39,14 +41,14 @@
 
 | Query | Recall | MRR | Keyword Recall | Latency |
 |-------|--------|-----|----------------|---------|
-| What are the two main architectures for biometric ... | 100% | 100% | 100% | 4524ms |
-| What is the Equal Error Rate (EER) in biometric au... | 100% | 100% | 100% | 3986ms |
-| What are the four specialized detection modules in... | 100% | 100% | 86% | 7411ms |
-| What accuracy did the multimodal BERT and DenseNet... | 100% | 50% | 62% | 2888ms |
-| What types of adversarial attacks threaten deep le... | 100% | 100% | 86% | 7490ms |
-| What is the definition of a Convolutional Neural N... | 100% | 33% | 100% | 2974ms |
-| Can you summarize the distributional hypothesis an... | 67% | 50% | 83% | 7264ms |
-| Summarize how Word2Vec Skip-Gram learns word embed... | 25% | 100% | 62% | 7336ms |
+| What are the two main architectures for biometric ... | 100% | 100% | 100% | 5373ms |
+| What is the Equal Error Rate (EER) in biometric au... | 100% | 100% | 100% | 5367ms |
+| What are the four specialized detection modules in... | 100% | 100% | 86% | 7696ms |
+| What accuracy did the multimodal BERT and DenseNet... | 100% | 50% | 75% | 3508ms |
+| What types of adversarial attacks threaten deep le... | 100% | 100% | 100% | 7987ms |
+| What is the definition of a Convolutional Neural N... | 100% | 33% | 100% | 4204ms |
+| Can you summarize the distributional hypothesis an... | 67% | 50% | 83% | 8293ms |
+| Summarize how Word2Vec Skip-Gram learns word embed... | 25% | 100% | 75% | 8381ms |
 
 ### Negative Tests (Should Refuse)
 
@@ -64,17 +66,17 @@
 
 > The two main architectures for biometric matching in smart cards are:
 
-1. **Match-on-Card (MoC)**: In this architecture, biometric matching is performed entirely on the chip of the card, and the biome...
+1. **Match-on-Card (MoC)**: In this architecture, biometric matching is performed entirely on the card’s chip, and the biometric ...
 
 **Query:** What is the Equal Error Rate (EER) in biometric authentication systems?
 
-> The Equal Error Rate (EER) in biometric authentication systems is a critical performance metric that is defined as the point at which the False Acceptance Rate (FAR) and the False Rejection Rate (FRR)...
+> The Equal Error Rate (EER) in biometric authentication systems is a critical performance metric that represents the point at which the False Acceptance Rate (FAR) and False Rejection Rate (FRR) are eq...
 
 **Query:** What are the four specialized detection modules in the proposed sarcasm detection system?
 
-> The proposed sarcasm detection system includes four specialized detection modules that work together to interpret different linguistic signals:
+> The proposed sarcasm detection system is designed with four specialized detection modules that work together to interpret different linguistic signals:
 
-1. **Sentiment Analysis**: This module utilizes VADER (...
+1. **Sentiment Analysis**: This module uses VAD...
 
 ---
 

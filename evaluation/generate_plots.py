@@ -36,14 +36,6 @@ COLORS = {
     "light_bg": "#F4F4F4",
 }
 
-# Target thresholds for reference lines
-TARGETS = {
-    "recall": 0.80,
-    "mrr": 0.80,
-    "keyword_recall": 0.70,
-}
-
-
 def setup_style():
     """Set up matplotlib style for clean, professional plots."""
     plt.style.use("seaborn-v0_8-whitegrid")
@@ -77,7 +69,8 @@ def load_results():
 
 def plot_metrics_by_query(results, output_path):
     """Grouped bar chart showing Recall, MRR, and Keyword Recall per query."""
-    chat_results = [r for r in results if "neg" not in r["id"]]
+    # Filter to chat results with valid keyword_recall (not None)
+    chat_results = [r for r in results if "neg" not in r["id"] and r["metrics"]["keyword_recall"] is not None]
 
     if not chat_results:
         return
@@ -88,8 +81,6 @@ def plot_metrics_by_query(results, output_path):
         key=lambda r: (r["metrics"]["recall"] + r["metrics"]["mrr"] + r["metrics"]["keyword_recall"]) / 3
     )
 
-    queries = [f"Q{i+1}" for i in range(len(chat_results))] # Use ID-like labels for cleanliness
-    # Map map original ID if available or index logic
     queries = [r["id"] for r in chat_results]
 
     recall = [r["metrics"]["recall"] * 100 for r in chat_results]
@@ -124,7 +115,8 @@ def plot_metrics_by_query(results, output_path):
 
 def plot_metric_distributions(results, output_path):
     """Box plot showing the distribution of key metrics."""
-    chat_results = [r for r in results if "neg" not in r["id"]]
+    # Filter to chat results with valid keyword_recall (not None)
+    chat_results = [r for r in results if "neg" not in r["id"] and r["metrics"]["keyword_recall"] is not None]
     if not chat_results:
         return
 
@@ -208,34 +200,33 @@ def plot_metrics_summary_bar(results, output_path):
     if not chat_results:
         return
 
+    # Filter out None keyword_recall values
+    keyword_values = [r["metrics"]["keyword_recall"] for r in chat_results if r["metrics"]["keyword_recall"] is not None]
+
     metrics = {
         "Recall@K": np.mean([r["metrics"]["recall"] for r in chat_results]),
         "MRR": np.mean([r["metrics"]["mrr"] for r in chat_results]),
-        "Keyword Recall": np.mean([r["metrics"]["keyword_recall"] for r in chat_results]),
+        "Keyword Recall": np.mean(keyword_values) if keyword_values else 0.0,
         "Negative Tests": (sum(1 for r in negative_results if r["metrics"]["refusal_score"] == 1.0) / len(negative_results)) if negative_results else 1.0,
     }
-    targets = {"Recall@K": 0.8, "MRR": 0.8, "Keyword Recall": 0.7, "Negative Tests": 1.0}
 
     fig, ax = plt.subplots(figsize=(10, 5))
     x = np.arange(len(metrics))
-    width = 0.35
+    width = 0.5
 
     vals = list(metrics.values())
-    targs = list(targets.values())
 
-    ax.bar(x - width/2, [v*100 for v in vals], width, label="Actual", color=COLORS["blue"])
-    ax.bar(x + width/2, [v*100 for v in targs], width, label="Target", color=COLORS["gray"], alpha=0.3)
+    bars = ax.bar(x, [v*100 for v in vals], width, color=COLORS["blue"])
 
-    # Labels
+    # Labels on top of bars
     for i, v in enumerate(vals):
-        ax.text(i - width/2, v*100 + 1, f"{v:.0%}", ha='center', fontweight='bold', color=COLORS["dark"])
+        ax.text(i, v*100 + 1, f"{v:.0%}", ha='center', fontweight='bold', color=COLORS["dark"])
 
     ax.set_xticks(x)
     ax.set_xticklabels(list(metrics.keys()))
     ax.set_ylabel("Score (%)")
-    ax.set_title("Average Metrics vs Targets")
+    ax.set_title("Average Performance Metrics")
     ax.set_ylim(0, 115)
-    ax.legend(loc="upper left")
 
     plt.tight_layout()
     plt.savefig(output_path)

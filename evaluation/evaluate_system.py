@@ -9,22 +9,32 @@ from typing import List, Dict
 # -----------------------------------------------------------------------------
 # 1. SETUP PATHS & ENV
 # -----------------------------------------------------------------------------
-# Add backend/app to sys.path so we can import from there
 current_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.abspath(os.path.join(current_dir, ".."))
 backend_app_dir = os.path.join(project_root, "backend", "app")
 
 sys.path.append(backend_app_dir)
 
-# Try to load .env from backend/app/.env
+# Try to load .env from multiple possible locations (supports different team setups)
 try:
     from dotenv import load_dotenv
-    env_path = os.path.join(backend_app_dir, ".env")
-    if os.path.exists(env_path):
-        print(f"Loading .env from {env_path}")
-        load_dotenv(env_path)
-    else:
-        print("Warning: .env file not found in backend/app, relying on existing env vars.")
+
+    # Check multiple locations in order of priority
+    env_locations = [
+        os.path.join(backend_app_dir, ".env"),  # backend/app/.env
+        os.path.join(project_root, ".env"),      # project root .env
+    ]
+
+    env_loaded = False
+    for env_path in env_locations:
+        if os.path.exists(env_path):
+            print(f"Loading .env from {env_path}")
+            load_dotenv(env_path)
+            env_loaded = True
+            break
+
+    if not env_loaded:
+        print("Warning: .env file not found in backend/app/ or project root, relying on existing env vars.")
 except ImportError:
     print("python-dotenv not installed. Assuming env vars are set.")
 
@@ -75,11 +85,6 @@ def ingest_test_documents(session_id: str, store):
                 # Use shared ingestion service
                 result = ingest_document(f, filename, session_id)
                 num_docs = result.get("num_added", 0) # Store returns list of ids or count
-                # Helper: SessionStore.add_documents usually returns boolean or list of IDs.
-                # Let's check session_store.py if possible, but assume list of IDs or truthy.
-                
-                # Looking at ingest_document implementation: it returns result from store.add_documents
-                # Let's assume it works.
                 print(f"    Ingested {filename}.")
 
         except Exception as e:
@@ -98,7 +103,7 @@ def run_evaluation():
 
     # B. INGEST DATA
     # Note: This is slow due to SemanticChunker calling embeddings.
-    # Consider using fewer/smaller test docs for faster iteration.
+
     try:
         ingest_test_documents(session_id, store)
     except Exception as e:
@@ -141,8 +146,6 @@ def run_evaluation():
         error_msg = None
         
         try:
-            # Shared Service Call
-            # This ensures we are testing the EXACT code path used in production
             response = generate_chat_answer(
                 session_id=session_id,
                 question=q_text,
@@ -228,7 +231,8 @@ def run_evaluation():
         }
         results.append(result_entry)
         
-        print(f"  Precision: {ret_metrics['precision']:.2f}, Recall: {ret_metrics['recall']:.2f}, Keyword: {keyword_recall:.2f}, Time: {latency_ms:.0f}ms")
+        keyword_display = f"{keyword_recall:.2f}" if keyword_recall is not None else "N/A"
+        print(f"  Precision: {ret_metrics['precision']:.2f}, Recall: {ret_metrics['recall']:.2f}, Keyword: {keyword_display}, Time: {latency_ms:.0f}ms")
 
     # E. SAVE RESULTS (JSON for programmatic access)
     with open(RESULTS_FILE, "w", encoding="utf-8") as f:
@@ -242,7 +246,9 @@ def run_evaluation():
 
     avg_precision = sum(r["metrics"]["precision"] for r in chat_results) / len(chat_results) if chat_results else 0
     avg_recall = sum(r["metrics"]["recall"] for r in chat_results) / len(chat_results) if chat_results else 0
-    avg_keyword = sum(r["metrics"]["keyword_recall"] for r in chat_results) / len(chat_results) if chat_results else 0
+    # Filter out None values for keyword recall (negative tests return None)
+    keyword_values = [r["metrics"]["keyword_recall"] for r in chat_results if r["metrics"]["keyword_recall"] is not None]
+    avg_keyword = sum(keyword_values) / len(keyword_values) if keyword_values else 0
     avg_latency = sum(r["metrics"]["latency_ms"] for r in chat_results) / len(chat_results) if chat_results else 0
     avg_mrr = sum(r["metrics"]["mrr"] for r in chat_results) / len(chat_results) if chat_results else 0
 
@@ -284,8 +290,7 @@ def run_evaluation():
     print(f"Negative Tests:      {negative_passed}/{negative_total} passed")
     print("="*50)
 
-    # Clean up (Optional)
-    # store.delete_session(session_id)
+
 
 
 def generate_markdown_report(
@@ -319,6 +324,8 @@ def generate_markdown_report(
 | **Avg Keyword Recall** | {avg_keyword:.1%} |
 | **Avg Latency** | {avg_latency:.0f} ms |
 
+**Note on Precision:** This evaluation ingests multiple documents into a single session to test cross-document retrieval. Lower precision scores (20-60%) are expected because the retrieval system returns chunks from all documents, not just the one relevant to each query. In typical production use with fewer documents per session, precision would be higher.
+
 ---
 
 ## Metrics Explanation
@@ -343,7 +350,8 @@ def generate_markdown_report(
     for r in chat_results:
         m = r["metrics"]
         query_short = r["query"][:50] + "..." if len(r["query"]) > 50 else r["query"]
-        report += f"| {query_short} | {m['recall']:.0%} | {m['mrr']:.0%} | {m['keyword_recall']:.0%} | {m['latency_ms']:.0f}ms |\n"
+        keyword_display = f"{m['keyword_recall']:.0%}" if m['keyword_recall'] is not None else "N/A"
+        report += f"| {query_short} | {m['recall']:.0%} | {m['mrr']:.0%} | {keyword_display} | {m['latency_ms']:.0f}ms |\n"
 
     report += """
 ### Negative Tests (Should Refuse)

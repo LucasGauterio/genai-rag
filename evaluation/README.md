@@ -2,134 +2,61 @@
 
 This folder contains the evaluation framework for testing the RAG (Retrieval-Augmented Generation) system's performance.
 
-## Folder Structure
+> [!NOTE]
+> **Evaluation Scope:** This evaluation focuses on the **RAG retrieval and answer generation system** using objective metrics (Recall, MRR, Keyword Recall). Flashcard quality is not evaluated as it requires subjective assessment of pedagogical value, which is outside the scope of quantitative evaluation.
+
+## Structure
 
 ```
 evaluation/
-├── README.md                 # This file
 ├── evaluate_system.py        # Main evaluation script
 ├── generate_plots.py         # Visualization generator
-├── metrics.py                # Metric calculation functions
-├── evaluation_results.json   # Raw results (generated after running)
-├── evaluation_report.md      # Human-readable report (generated after running)
-├── plots/                    # Generated visualizations (after running generate_plots.py)
-│   ├── metrics_by_query.png
-│   ├── summary_radar.png
-│   ├── latency_distribution.png
-│   ├── negative_tests.png
-│   └── metrics_summary.png
+├── metrics.py                # Metric calculations
+├── evaluation_results.json   # Raw results (generated)
+├── evaluation_report.md      # Detailed report (generated)
+├── visual_results.md         # Visual analysis
+├── plots/                    # Generated visualizations
 └── dataset/
     ├── ground_truth.json     # Test queries with expected answers
-    └── test_documents/       # PDF files used for evaluation
-        ├── paper1.pdf
-        ├── paper2.pdf
-        └── lecture1.pdf
+    └── test_documents/       # PDF files for evaluation
 ```
 
-## How to Run
+## Quick Start
 
-### Prerequisites
+**Prerequisites:** Backend environment set up, Ollama running, `.env` file configured
 
-1. Ensure the backend environment is set up with all dependencies
-2. Make sure Ollama is running (for embeddings)
-3. Ensure `.env` file exists in `backend/app/` with required API keys:
-   - `OPENROUTER_API_KEY` - for LLM generation
-
-### Running the Evaluation
-
-From the project root:
-
+**Run evaluation:**
 ```bash
 cd evaluation
 python evaluate_system.py
 ```
 
-Or from the evaluation folder:
-
+**Generate visualizations:**
 ```bash
-python evaluate_system.py
+python generate_plots.py  # requires matplotlib, numpy
 ```
 
-The script will:
-1. Create a temporary session
-2. Ingest all PDFs from `dataset/test_documents/`
-3. Run each query from `ground_truth.json`
-4. Calculate metrics and save results
-
-### Output Files
+## Output Files
 
 After running, two files are generated:
 
 - **evaluation_results.json** - Raw JSON results for programmatic access
 - **evaluation_report.md** - Formatted markdown report with tables and summaries
-
-## Visual Analysis
-
-The following visualizations provide a comprehensive view of the system's performance.
-
-### 1. Performance Summary vs Targets
-A direct comparison of average system performance against the defined success criteria.
-![Performance Summary](plots/metrics_summary.png)
-
-### 2. Metric Distribution (Consistency)
-This box plot reveals the consistency of the system. Tighter boxes indicate reliable performance across different queries, while wider boxes suggest variability.
-![Metric Distribution](plots/metric_distributions.png)
-
-### 3. Detailed Metrics by Query
-A granular view of how each query performed. This helps identify specific topic areas where the system may struggle.
-![Metrics by Query](plots/metrics_by_query.png)
-
-### 4. Latency Analysis
-Response times for each query. Green bars indicate responses under the 5-second target.
-![Latency Distribution](plots/latency_distribution.png)
-
+- **VISUAL_RESULTS.md** - Visual analysis with performance plots
 
 ### Generating Visualizations
 
-After running the evaluation, generate plots:
+**Plots generated:** `metrics_summary.png`, `metric_distributions.png`, `metrics_by_query.png`, `latency_distribution.png`
 
-```bash
-python generate_plots.py
-```
+See [VISUAL_RESULTS.md](VISUAL_RESULTS.md) for visual analysis.
 
-**Requirements:** `matplotlib` and `numpy`
+## Key Files
 
-```bash
-pip install matplotlib numpy
-```
+**evaluate_system.py** - Ingests test documents, runs queries, measures performance, generates reports
 
-This creates the `plots/` folder with:
+**metrics.py** - Functions: `calculate_retrieval_metrics()`, `calculate_keyword_recall()`, `LatencyTimer`
 
-| Plot | Description |
-|------|-------------|
-| `metrics_summary.png` | Average metrics compared to target thresholds |
-| `metric_distributions.png` | Box plot showing spread/consistency of scores |
-| `metrics_by_query.png` | Grouped bar chart of Recall, MRR, Keyword Recall per query |
-| `latency_distribution.png` | Response time analysis with fast/slow color coding |
-
-## Files Explained
-
-### evaluate_system.py
-
-Main evaluation script that:
-- Ingests test documents into a session
-- Runs queries against the RAG system
-- Measures retrieval and generation quality
-- Generates reports
-
-### metrics.py
-
-Contains metric calculation functions:
-
-| Function | Description |
-|----------|-------------|
-| `calculate_retrieval_metrics()` | Computes Precision@K, Recall@K, and MRR |
-| `calculate_keyword_recall()` | Checks if expected keywords appear in generated text |
-| `LatencyTimer` | Utility class for measuring response time |
-
-### generate_plots.py
-
-Generates visualizations
+**generate_plots.py** - Creates visualizations from evaluation results
 
 ### dataset/ground_truth.json
 
@@ -234,7 +161,3 @@ The evaluation uses a fixed `k=5` for retrieval. Production systems may use diff
 
 **No documents found:**
 - Verify PDFs exist in `dataset/test_documents/`
-
-**API errors:**
-- Check `.env` file has valid `OPENROUTER_API_KEY`
-- Ensure Ollama is running for embeddings

@@ -1,6 +1,6 @@
 import time
 import re
-from typing import List, Dict, Set, Union
+from typing import List, Dict, Set, Union, Optional
 
 def calculate_retrieval_metrics(
     retrieved_chunks: List[Dict], 
@@ -88,7 +88,7 @@ def _keyword_matches(keyword: str, text: str) -> bool:
 
     return False
 
-def calculate_keyword_recall(generated_text: str, expected_keywords: List[str]) -> float:
+def calculate_keyword_recall(generated_text: str, expected_keywords: List[str]) -> Optional[float]:
     """
     Calculate the fraction of expected keywords present in the generated text.
 
@@ -102,10 +102,10 @@ def calculate_keyword_recall(generated_text: str, expected_keywords: List[str]) 
         expected_keywords: List of keywords/phrases to look for.
 
     Returns:
-        Float between 0.0 and 1.0.
+        Float between 0.0 and 1.0, or None if no keywords expected (e.g., negative tests).
     """
     if not expected_keywords:
-        return 1.0  # No keywords expected, so technically we missed nothing
+        return None  # Not applicable - no keywords to measure
 
     if not generated_text:
         return 0.0

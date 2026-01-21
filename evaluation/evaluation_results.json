@@ -9,10 +9,10 @@
         "recall": 1.0,
         "mrr": 1.0,
         "keyword_recall": 1.0,
-        "latency_ms": 4524.46436882019,
+        "latency_ms": 5373.090505599976,
         "refusal_score": 1.0
       },
-      "generated_text_preview": "The two main architectures for biometric matching in smart cards are:\n\n1. **Match-on-Card (MoC)**: In this architecture, biometric matching is performed entirely on the chip of the card, and the biome",
+      "generated_text_preview": "The two main architectures for biometric matching in smart cards are:\n\n1. **Match-on-Card (MoC)**: In this architecture, biometric matching is performed entirely on the card\u2019s chip, and the biometric ",
       "error": null
     },
     {
@@ -24,10 +24,10 @@
         "recall": 1.0,
         "mrr": 1.0,
         "keyword_recall": 1.0,
-        "latency_ms": 3985.949754714966,
+        "latency_ms": 5366.890430450439,
         "refusal_score": 1.0
       },
-      "generated_text_preview": "The Equal Error Rate (EER) in biometric authentication systems is a critical performance metric that is defined as the point at which the False Acceptance Rate (FAR) and the False Rejection Rate (FRR)",
+      "generated_text_preview": "The Equal Error Rate (EER) in biometric authentication systems is a critical performance metric that represents the point at which the False Acceptance Rate (FAR) and False Rejection Rate (FRR) are eq",
       "error": null
     },
     {
@@ -39,10 +39,10 @@
         "recall": 1.0,
         "mrr": 1.0,
         "keyword_recall": 0.8571428571428571,
-        "latency_ms": 7411.334753036499,
+        "latency_ms": 7696.038484573364,
         "refusal_score": 1.0
       },
-      "generated_text_preview": "The proposed sarcasm detection system includes four specialized detection modules that work together to interpret different linguistic signals:\n\n1. **Sentiment Analysis**: This module utilizes VADER (",
+      "generated_text_preview": "The proposed sarcasm detection system is designed with four specialized detection modules that work together to interpret different linguistic signals:\n\n1. **Sentiment Analysis**: This module uses VAD",
       "error": null
     },
     {
@@ -53,11 +53,11 @@
         "precision": 0.6,
         "recall": 1.0,
         "mrr": 0.5,
-        "keyword_recall": 0.625,
-        "latency_ms": 2888.0622386932373,
+        "keyword_recall": 0.75,
+        "latency_ms": 3507.5926780700684,
         "refusal_score": 1.0
       },
-      "generated_text_preview": "The multimodal model that utilized BERT and DenseNet for sarcasm detection achieved an accuracy of 93.2% in the case study [2].",
+      "generated_text_preview": "The multimodal BERT and DenseNet fusion model achieved an accuracy of 93.2% in the sarcasm detection case study [2]. This result demonstrates the significant value added by incorporating visual signal",
       "error": null
     },
     {
@@ -68,11 +68,11 @@
         "precision": 0.2,
         "recall": 1.0,
         "mrr": 1.0,
-        "keyword_recall": 0.8571428571428571,
-        "latency_ms": 7489.8810386657715,
+        "keyword_recall": 1.0,
+        "latency_ms": 7986.9225025177,
         "refusal_score": 1.0
       },
-      "generated_text_preview": "Deep learning-based biometric systems face several types of adversarial attacks that threaten their integrity and security. The main types of attacks identified in the literature include:\n\n1. **Advers",
+      "generated_text_preview": "Deep learning-based biometric systems are threatened by several types of adversarial attacks, primarily focused on spoofing and manipulation. The key types include:\n\n1. **Adversarial Examples**: This ",
       "error": null
     },
     {
@@ -84,10 +84,10 @@
         "recall": 1.0,
         "mrr": 0.3333333333333333,
         "keyword_recall": 1.0,
-        "latency_ms": 2973.618984222412,
+        "latency_ms": 4204.330682754517,
         "refusal_score": 1.0
       },
-      "generated_text_preview": "A Convolutional Neural Network (CNN) is defined as a specialized neural network designed to process data that has a grid-like topology, such as images or text matrices. CNNs utilize convolutional laye",
+      "generated_text_preview": "A Convolutional Neural Network (CNN) is a specialized type of neural network designed to process data that has a grid-like topology, such as images or text matrices. CNNs utilize convolutional layers ",
       "error": null
     },
     {
@@ -99,10 +99,10 @@
         "recall": 0.6666666666666666,
         "mrr": 0.5,
         "keyword_recall": 0.8333333333333334,
-        "latency_ms": 7263.568878173828,
+        "latency_ms": 8292.607307434082,
         "refusal_score": 1.0
       },
-      "generated_text_preview": "The distributional hypothesis is a linguistic theory that posits that words that have similar meanings will tend to occur in similar contexts, or environments. This concept was first articulated in th",
+      "generated_text_preview": "The distributional hypothesis is a linguistic theory asserting that words that share similar meanings tend to occur in similar contexts or environments. This hypothesis was first formulated in the 195",
       "error": null
     },
     {
@@ -113,11 +113,11 @@
         "precision": 0.2,
         "recall": 0.25,
         "mrr": 1.0,
-        "keyword_recall": 0.625,
-        "latency_ms": 7336.485147476196,
+        "keyword_recall": 0.75,
+        "latency_ms": 8381.439685821533,
         "refusal_score": 1.0
       },
-      "generated_text_preview": "Word2Vec Skip-Gram learns word embeddings through a process that involves the following steps:\n\n1. **Initialization**: It begins with a set of random 300-dimensional vectors that serve as initial embe",
+      "generated_text_preview": "The Word2Vec Skip-Gram model learns word embeddings through a process involving several key steps:\n\n1. **Initialization**: Begin with V random vectors, each of 300 dimensions, which serve as the initi",
       "error": null
     },
     {
@@ -128,11 +128,11 @@
         "precision": 0.0,
         "recall": 0.0,
         "mrr": 0.0,
-        "keyword_recall": 1.0,
-        "latency_ms": 2902.679443359375,
+        "keyword_recall": null,
+        "latency_ms": 4872.921943664551,
         "refusal_score": 1.0
       },
-      "generated_text_preview": "The provided sources do not contain any relevant information regarding quantum entanglement or its role in enabling quantum computing. Therefore, I am unable to answer your question based on the avail",
+      "generated_text_preview": "The provided sources do not contain any information on quantum entanglement or how it enables quantum computing. Quantum entanglement is a phenomenon in quantum mechanics where two or more particles b",
       "error": null
     },
     {
@@ -143,11 +143,11 @@
         "precision": 0.0,
         "recall": 0.0,
         "mrr": 0.0,
-        "keyword_recall": 1.0,
-        "latency_ms": 3381.9825649261475,
+        "keyword_recall": null,
+        "latency_ms": 2403.270483016968,
         "refusal_score": 1.0
       },
-      "generated_text_preview": "The provided sources do not contain information regarding the recipe for making sourdough bread from scratch. They focus on topics related to word embeddings (e.g., word2vec), sarcasm detection system",
+      "generated_text_preview": "The provided sources do not contain any relevant information or recipes for making sourdough bread from scratch. Therefore, I am unable to answer your question based on the available sources.",
       "error": null
     },
     {
@@ -158,11 +158,11 @@
         "precision": 0.0,
         "recall": 0.0,
         "mrr": 0.0,
-        "keyword_recall": 1.0,
-        "latency_ms": 3393.4712409973145,
+        "keyword_recall": null,
+        "latency_ms": 3188.634157180786,
         "refusal_score": 1.0
       },
-      "generated_text_preview": "The provided sources do not contain any information on how black holes form or what happens at the event horizon. They focus on aspects of lexical semantics, word relationships, and word embeddings. I",
+      "generated_text_preview": "I'm sorry, but the provided sources do not contain information about the formation of black holes or the phenomenon at the event horizon. Therefore, I cannot answer your question based on the given ma",
       "error": null
     }
   ]
