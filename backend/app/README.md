@@ -4,38 +4,74 @@ Flask backend for session-based RAG with citation support.
 
 ## Quick Start
 
-### Option 1: VS Code Debugger (Recommended)
+The backend requires python dependencies and the environment variables configured.
 
-1. Open VS Code in the project root
-2. Press `F5` or go to Run → Start Debugging
-3. Select **"Python: Flask (Backend)"** configuration
-4. Server starts at `http://localhost:5000`
+### Option 1: Terminal (Manual Setup)
 
-### Option 2: Terminal
+1. Navigate to the backend directory:
+   ```bash
+   cd backend/app
+   ```
+2. Create and activate a Python virtual environment:
+   * **macOS / Linux**:
+     ```bash
+     python -m venv venv
+     source venv/bin/activate
+     ```
+   * **Windows (Command Prompt)**:
+     ```cmd
+     python -m venv venv
+     venv\Scripts\activate.bat
+     ```
+   * **Windows (PowerShell)**:
+     ```powershell
+     python -m venv venv
+     .\venv\Scripts\Activate.ps1
+     ```
+3. Install dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
+4. Start the server:
+   ```bash
+   python app.py
+   ```
+   The server starts at `http://localhost:5000`.
+
+### Option 2: Flask CLI
 
 ```bash
 cd backend/app
-pip install -r requirements.txt
-python app.py
-```
-
-### Option 3: Flask CLI
-
-```bash
-cd backend/app
+# Set environment variables if not using a .env file:
+# On Linux/macOS:
 export FLASK_APP=app.py
 export FLASK_ENV=development
+# On Windows (PowerShell):
+# $env:FLASK_APP="app.py"; $env:FLASK_ENV="development"
 flask run --host=0.0.0.0 --port=5000
 ```
 
 ## Environment Variables
 
-Create `.env` file in `backend/app/`:
+The backend utilizes `python-dotenv` to dynamically find and load environment variables. It searches for a `.env` file starting from the current directory and walks up the folder tree.
+
+You can configure the variables in either the **root directory** `.env` or in the **backend application directory** `backend/app/.env`:
 
 ```env
-OPENROUTER_API_KEY=your_key_here
+# LLM Provider: 'openrouter' or 'gemini'
+LLM_PROVIDER=openrouter
+
+# OpenRouter Configuration
+OPENROUTER_API_KEY=your_openrouter_api_key_here
 OPENROUTER_MODEL=openai/gpt-4o-mini
+
+# Google Gemini Configuration
+GEMINI_API_KEY=your_gemini_api_key_here
+GEMINI_MODEL=gemini-2.5-flash
+
+# Local Embeddings (Ollama)
 OLLAMA_BASE_URL=http://localhost:11434
+OLLAMA_EMBEDDING_MODEL=nomic-embed-text
 ```
 
 ## API Endpoints
